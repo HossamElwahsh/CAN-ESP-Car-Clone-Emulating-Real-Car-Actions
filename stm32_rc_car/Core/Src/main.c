@@ -16,6 +16,7 @@
   *
   ******************************************************************************
   */
+
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -673,10 +674,6 @@ static void MX_TIM3_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN TIM3_Init 2 */
 
   /* USER CODE END TIM3_Init 2 */
@@ -732,16 +729,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, MOTOR_IN_1_RIGHT_Pin|MOTOR_IN_2_RIGHT_Pin|MOTOR_IN_3_LEFT_Pin|GPIO_PIN_5
-                          |LED_LEFT_Pin|GPIO_PIN_10, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, MOTOR_EN_A_RIGHT_Pin|MOTOR_IN_1_RIGHT_Pin|MOTOR_IN_2_RIGHT_Pin|MOTOR_IN_3_LEFT_Pin
+                          |MOTOR_IN_4_LEFT_Pin|LED_LEFT_Pin|US_TRIGGER_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin|LED_REVERSE_Pin|LED_FRONT_Pin|LED_RIGHT_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : MOTOR_IN_1_RIGHT_Pin MOTOR_IN_2_RIGHT_Pin MOTOR_IN_3_LEFT_Pin PA5
-                           LED_LEFT_Pin PA10 */
-  GPIO_InitStruct.Pin = MOTOR_IN_1_RIGHT_Pin|MOTOR_IN_2_RIGHT_Pin|MOTOR_IN_3_LEFT_Pin|GPIO_PIN_5
-                          |LED_LEFT_Pin|GPIO_PIN_10;
+  /*Configure GPIO pins : MOTOR_EN_A_RIGHT_Pin MOTOR_IN_1_RIGHT_Pin MOTOR_IN_2_RIGHT_Pin MOTOR_IN_3_LEFT_Pin
+                           MOTOR_IN_4_LEFT_Pin LED_LEFT_Pin US_TRIGGER_Pin */
+  GPIO_InitStruct.Pin = MOTOR_EN_A_RIGHT_Pin|MOTOR_IN_1_RIGHT_Pin|MOTOR_IN_2_RIGHT_Pin|MOTOR_IN_3_LEFT_Pin
+                          |MOTOR_IN_4_LEFT_Pin|LED_LEFT_Pin|US_TRIGGER_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

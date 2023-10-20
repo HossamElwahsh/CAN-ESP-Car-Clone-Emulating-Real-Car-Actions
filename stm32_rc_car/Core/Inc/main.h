@@ -150,16 +150,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_1
+#define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_1_RIGHT_Pin GPIO_PIN_2
 #define MOTOR_IN_1_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_2_RIGHT_Pin GPIO_PIN_3
 #define MOTOR_IN_2_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_3_LEFT_Pin GPIO_PIN_4
 #define MOTOR_IN_3_LEFT_GPIO_Port GPIOA
-#define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_6
-#define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
-#define MOTOT_EN_B_LEFT_Pin GPIO_PIN_7
-#define MOTOT_EN_B_LEFT_GPIO_Port GPIOA
+#define MOTOR_IN_4_LEFT_Pin GPIO_PIN_5
+#define MOTOR_IN_4_LEFT_GPIO_Port GPIOA
+#define MOTOR_EN_B_LEFT_Pin GPIO_PIN_6
+#define MOTOR_EN_B_LEFT_GPIO_Port GPIOA
 #define LED_BRAKES_Pin GPIO_PIN_12
 #define LED_BRAKES_GPIO_Port GPIOB
 #define LED_REVERSE_Pin GPIO_PIN_13
@@ -170,8 +172,10 @@ void Error_Handler(void);
 #define LED_RIGHT_GPIO_Port GPIOB
 #define LED_LEFT_Pin GPIO_PIN_8
 #define LED_LEFT_GPIO_Port GPIOA
-#define HHHHHH_Pin GPIO_PIN_9
-#define HHHHHH_GPIO_Port GPIOA
+#define US_ECHO_Pin GPIO_PIN_9
+#define US_ECHO_GPIO_Port GPIOA
+#define US_TRIGGER_Pin GPIO_PIN_10
+#define US_TRIGGER_GPIO_Port GPIOA
 #define ESP_TX_Pin GPIO_PIN_6
 #define ESP_TX_GPIO_Port GPIOB
 #define ESP_RX_Pin GPIO_PIN_7

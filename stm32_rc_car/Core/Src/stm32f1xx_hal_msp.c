@@ -171,10 +171,10 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     /**TIM1 GPIO Configuration
     PA9     ------> TIM1_CH2
     */
-    GPIO_InitStruct.Pin = HHHHHH_Pin;
+    GPIO_InitStruct.Pin = US_ECHO_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(HHHHHH_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(US_ECHO_GPIO_Port, &GPIO_InitStruct);
 
     /* TIM1 interrupt Init */
     HAL_NVIC_SetPriority(TIM1_CC_IRQn, 0, 0);
@@ -209,12 +209,11 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**TIM3 GPIO Configuration
     PA6     ------> TIM3_CH1
-    PA7     ------> TIM3_CH2
     */
-    GPIO_InitStruct.Pin = MOTOR_EN_A_RIGHT_Pin|MOTOT_EN_B_LEFT_Pin;
+    GPIO_InitStruct.Pin = MOTOR_EN_B_LEFT_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    HAL_GPIO_Init(MOTOR_EN_B_LEFT_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM3_MspPostInit 1 */
 
@@ -241,7 +240,7 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
     /**TIM1 GPIO Configuration
     PA9     ------> TIM1_CH2
     */
-    HAL_GPIO_DeInit(HHHHHH_GPIO_Port, HHHHHH_Pin);
+    HAL_GPIO_DeInit(US_ECHO_GPIO_Port, US_ECHO_Pin);
 
     /* TIM1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(TIM1_CC_IRQn);
