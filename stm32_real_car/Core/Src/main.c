@@ -19,6 +19,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,117 +45,16 @@ CAN_HandleTypeDef hcan;
 
 UART_HandleTypeDef huart1;
 
+osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 CAN_FilterTypeDef FilterConfig;
 CAN_RxHeaderTypeDef RxHeader; //structure for message reception
 
+/* Create semaphore for UART transmit task */
+SemaphoreHandle_t uartTransmitRequestSemaphore;
 
-typedef struct
-{
-	BOOLEAN bool_break_lights		:	SIZE_ONE_BIT;
-	BOOLEAN bool_front_lights		:	SIZE_ONE_BIT;
-	BOOLEAN bool_reverse_lights		:	SIZE_ONE_BIT;
-	BOOLEAN bool_left_indicator		:	SIZE_ONE_BIT;
-	BOOLEAN bool_right_indicator	:	SIZE_ONE_BIT;
-	BOOLEAN bool_hazard_indicator	:	SIZE_ONE_BIT;
-	BOOLEAN bool_reserved_1			:	SIZE_ONE_BIT;
-	BOOLEAN bool_reserved_2			:	SIZE_ONE_BIT;
-}st_lighting_state_t;
-
-typedef enum
-{
-	TRANSMISSION_STATE_NONE		=	ZERO	,
-	TRANSMISSION_STATE_PARKING				,
-	TRANSMISSION_STATE_REVERSE				,
-	TRANSMISSION_STATE_NEUTRAL				,
-	TRANSMISSION_STATE_DRIVE				,
-	TRANSMISSION_STATE_TOTAL				,
-}en_transmission_state_t;
-
-typedef enum
-{
-	STEERING_STATE_NONE			=	ZERO								,
-	STEERING_STATE_STRAIGHT		= APP_ESP_DATA_STEERING_STRAIGHT		,
-	STEERING_STATE_LEFT			= APP_ESP_DATA_STEERING_LEFT			,
-	STEERING_STATE_SHARP_LEFT	= APP_ESP_DATA_STEERING_SHARP_LEFT		,
-	STEERING_STATE_RIGHT		= APP_ESP_DATA_STEERING_RIGHT			,
-	STEERING_STATE_SHARP_RIGHT	= APP_ESP_DATA_STEERING_SHARP_RIGHT		,
-	STEERING_STATE_TOTAL
-}en_steering_state_t;
-
-/* Saves last sent data states to prevent duplicate unnecessary sends */
-typedef struct
-{
-	/* lighting value */
-	uint32_t u32_lighting_val;
-
-	/* throttle value */
-	uint8_t u8_throttle_val;
-
-	/* lighting value */
-	st_lighting_state_t st_lighting_state;
-
-	/* transmission state */
-	en_transmission_state_t en_transmission_state;
-
-	/* steering state */
-	en_steering_state_t en_steering_state;
-
-}st_last_data_state_t;
-
-typedef struct
-{
-	/* byte 1 */
-	uint32_t u32_unused_bit0:1;
-	uint32_t u32_unused_bit1:1;
-	uint32_t u32_unused_bit2:1;
-	uint32_t u32_unused_bit3:1;
-	uint32_t u32_unused_bit4:1;
-	uint32_t u32_unused_bit5:1;
-	uint32_t u32_unused_bit6:1;
-	uint32_t u32_unused_bit7:1;
-
-	/* byte 2 */
-	uint32_t u32_bit8_left_indicator:1;
-	uint32_t u32_unused_bit9:1;
-	uint32_t u32_unused_bit10:1;
-	uint32_t u32_unused_bit11:1;
-	uint32_t u32_unused_bit12:1;
-	uint32_t u32_unused_bit13:1;
-	uint32_t u32_unused_bit14:1;
-	uint32_t u32_unused_bit15:1;
-
-
-	/* byte 3 */
-	uint32_t u32_unused_bit16:1;
-	uint32_t u32_unused_bit17:1;
-	uint32_t u32_bit18_right_indicator:1;
-	uint32_t u32_unused_bit19:1;
-	uint32_t u32_unused_bit20:1;
-	uint32_t u32_bit21_brake_lights:1;
-	uint32_t u32_unused_bit22:1;
-	uint32_t u32_unused_bit23:1;
-
-	/* byte 4 */
-	uint32_t u32_unused_bit24:1;
-	uint32_t u32_unused_bit25:1;
-	uint32_t u32_unused_bit26:1;
-	uint32_t u32_unused_bit27:1;
-	uint32_t u32_unused_bit28:1;
-	uint32_t u32_unused_bit29:1;
-	uint32_t u32_unused_bit30:1;
-	uint32_t u32_unused_bit31:1;
-}st_lighting_bits_t;
-
-/* Converter union for RxData */
-union
-{
-	uint8_t 	RxData[APP_RX_DATA_LENGTH];	// Receive buffer
-	uint8_t		u8_rxNumber;
-	uint16_t 	u16_rxNumber;
-	uint32_t 	u32_rxNumber;
-	st_lighting_bits_t u8_lighting_bits;
-}un_gs_RxConv;
+/* Create uart transmit queue */
+QueueHandle_t uartTransmitQueue;
 
 static st_last_data_state_t st_gs_last_data_state;
 
@@ -165,7 +65,10 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
 static void MX_USART1_UART_Init(void);
+void StartDefaultTask(void const * argument);
+
 /* USER CODE BEGIN PFP */
+void task_process_can_data(void * pvParameters);
 
 /* USER CODE END PFP */
 
@@ -175,330 +78,19 @@ static void MX_USART1_UART_Init(void);
 
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-	/* variables */
-	BOOLEAN bool_has_data = FALSE;
-	uint8_t u8_l_uart_data = ZERO;
-	union
-	{
-		en_steering_state_t en_current_steering;
-		uint8_t 			u8_current_transmission_val;
-		uint32_t			u32_lights_val;
-		st_lighting_bits_t	st_lights_bits;
-	}un_local_temp_data;
+	st_uart_queue_item_t st_uart_queue_item;
 
+	/* check message */
+	/* Read Message into local data converter rx buffer */
+	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, st_uart_queue_item.un_data_converter.RxData);
 
-	/* Read Message into local buffer [RxData] */
-	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, un_gs_RxConv.RxData);
+	/* store can id for further processing */
+	st_uart_queue_item.item_id = RxHeader.StdId;
 
-	/* Inline helping function(s) */
-	inline void app_calc_throttle_power_percentage(uint16_t u16_a_throttle_reading)
-	{
-		/* calculate throttle percentage */
-		u8_l_uart_data = (u16_a_throttle_reading * MAX_PERCENTAGE) / (THROTTLE_READING_REDUCTION_FACTOR);
+	/* give transmit request semaphore */
+	xSemaphoreGive(uartTransmitRequestSemaphore);
 
-		/* raise UART send request flag */
-		bool_has_data = TRUE;
-	}
-
-	/* Map transmission state */
-	inline void app_map_transmission(void)
-	{
-		/* store current transmission value temporarily for readability */
-		un_local_temp_data.u8_current_transmission_val = un_gs_RxConv.u8_rxNumber;
-
-		switch(un_local_temp_data.u8_current_transmission_val)
-		{
-			case APP_CAR_TRANSMISSION_PARK:
-			{
-				if(TRANSMISSION_STATE_PARKING != st_gs_last_data_state.en_transmission_state)
-				{
-					/* update global state */
-					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_PARKING;
-
-					/* generate frame */
-					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
-
-					/* queue queue data and raise UART send request flag */
-					bool_has_data = TRUE;
-				}
-				else
-				{
-					/* duplicated data - ignore */
-				}
-
-				break;
-			}
-			case APP_CAR_TRANSMISSION_DRIVE:
-			{
-				if(TRANSMISSION_STATE_DRIVE != st_gs_last_data_state.en_transmission_state)
-				{
-					/* update global state */
-					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_DRIVE;
-
-					/* generate frame */
-					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
-
-					/* queue queue data and raise UART send request flag */
-					bool_has_data = TRUE;
-				}
-				else
-				{
-					/* duplicated data - ignore */
-				}
-
-				break;
-			}
-			case APP_CAR_TRANSMISSION_NEUTRAL:
-			{
-				if(TRANSMISSION_STATE_NEUTRAL != st_gs_last_data_state.en_transmission_state)
-				{
-					/* update global state */
-					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_NEUTRAL;
-
-					/* generate frame */
-					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
-
-					/* queue queue data and raise UART send request flag */
-					bool_has_data = TRUE;
-				}
-				else
-				{
-					/* duplicated data - ignore */
-				}
-
-				break;
-			}
-			case APP_CAR_TRANSMISSION_REVERSE:
-			{
-				if(TRANSMISSION_STATE_REVERSE != st_gs_last_data_state.en_transmission_state)
-				{
-					/* update global state */
-					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_REVERSE;
-
-					/* generate frame */
-					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
-
-					/* queue queue data and raise UART send request flag */
-					bool_has_data = TRUE;
-				}
-				else
-				{
-					/* duplicated data - ignore */
-				}
-
-				break;
-			}
-
-			default:
-			{
-				/* Do Nothing */
-				break;
-			}
-		}
-	}
-
-	/* Map Steering Value */
-	inline void app_map_steering(uint8_t u8_a_steering_val)
-	{
-		un_local_temp_data.en_current_steering = STEERING_STATE_NONE;
-
-		/* check steering range */
-		/* invalid boundary check */
-		if(
-				(u8_a_steering_val > APP_CAR_STEERING_THRESHOLD_SHARP_LEFT_MAX) ||
-				(u8_a_steering_val < APP_CAR_STEERING_THRESHOLD_SHARP_RIGHT_MIN)
-		)
-		{
-			/* Invalid data - ignore */
-		}
-		/* decremental steering check */
-		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_SHARP_LEFT_MIN)
-		{
-			/* sharp left */
-			un_local_temp_data.en_current_steering = STEERING_STATE_SHARP_LEFT;
-		}
-		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_LEFT_MIN)
-		{
-			/* slight left */
-			un_local_temp_data.en_current_steering = STEERING_STATE_LEFT;
-		}
-		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_STRAIGHT_MIN)
-		{
-			/* straight - no steering */
-			un_local_temp_data.en_current_steering = STEERING_STATE_STRAIGHT;
-		}
-		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_RIGHT_MIN)
-		{
-			/* slight right */
-			un_local_temp_data.en_current_steering = STEERING_STATE_RIGHT;
-		}
-		else
-		{
-			/* sharp right */
-			un_local_temp_data.en_current_steering = STEERING_STATE_SHARP_RIGHT;
-		}
-
-		/* queue sending signal to ESP */
-		if(
-				(un_local_temp_data.en_current_steering != STEERING_STATE_NONE) &&
-				(un_local_temp_data.en_current_steering != st_gs_last_data_state.en_steering_state)
-			)
-		{
-			/* update last steering state */
-			st_gs_last_data_state.en_steering_state = un_local_temp_data.en_current_steering;
-
-			/* send data */
-			u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_STEERING, un_local_temp_data.en_current_steering);
-
-			/* raise send flag */
-			bool_has_data = TRUE;
-		}
-	}
-
-
-	/* Map Data */
-	switch (RxHeader.StdId)
-	{
-		case APP_CAN_ID_THROTTLE:
-		{
-			/* Map throttle values to 0 -> 100% */
-			app_calc_throttle_power_percentage(un_gs_RxConv.u16_rxNumber);
-			break;
-		}
-		case APP_CAN_ID_STEERING:
-		{
-			/* Map steering values */
-			app_map_steering(un_gs_RxConv.u8_rxNumber);
-			break;
-		}
-
-		case APP_CAN_ID_LIGHTS:
-		{
-			/* check if there's a change */
-			if(un_gs_RxConv.u32_rxNumber != st_gs_last_data_state.u32_lighting_val)
-			{
-				/* changed - calculate changes */
-				un_local_temp_data.u32_lights_val = GET_CHANGED_BITS(st_gs_last_data_state.u32_lighting_val, un_gs_RxConv.u32_rxNumber);
-
-				/* update last state global variable */
-				st_gs_last_data_state.u32_lighting_val = un_gs_RxConv.u32_rxNumber;
-
-				/* check changed lights */
-				if(un_local_temp_data.st_lights_bits.u32_bit21_brake_lights)
-				{
-					/* brake lights state changed - toggle last state */
-					TOGGLE(st_gs_last_data_state.st_lighting_state.bool_break_lights);
-
-					/* queue to ESP */
-					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_break_lights);
-
-					/* raise flag */
-					bool_has_data = TRUE;
-				}
-				if(un_local_temp_data.st_lights_bits.u32_bit8_left_indicator)
-				{
-					/* brake lights state changed - toggle last state */
-					TOGGLE(st_gs_last_data_state.st_lighting_state.bool_left_indicator);
-
-					if(
-							(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
-								st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
-								(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
-							)
-					{
-						/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
-						/* update hazard global state */
-						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
-
-
-						/* queue to ESP */
-						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
-
-					}else
-					{
-						/* turn off hazard state */
-						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
-
-						/* queue to ESP */
-						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_left_indicator);
-					}
-
-
-					/* raise flag */
-					bool_has_data = TRUE;
-				}
-				if(un_local_temp_data.st_lights_bits.u32_bit18_right_indicator)
-				{
-					/* brake lights state changed - toggle last state */
-					TOGGLE(st_gs_last_data_state.st_lighting_state.bool_right_indicator);
-
-					if(
-							(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
-								st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
-								(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
-							)
-					{
-						/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
-						/* update hazard global state */
-						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
-
-
-						/* queue to ESP */
-						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
-
-					}else
-					{
-						/* turn off hazard state */
-						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
-
-						/* queue to ESP */
-						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
-					}
-
-
-					/* raise flag */
-					bool_has_data = TRUE;
-				}
-
-			}
-			else
-			{
-				/* no change - do nothing */
-			}
-
-
-
-			break;
-		}
-		case APP_CAN_ID_TRANSMISSION:
-		{
-			/* check transmission state */
-			app_map_transmission();
-			break;
-		}
-
-		default:
-		{
-			/* Do Nothing */
-			break;
-		}
-	}
-
-	/* Dispatch to UART */
-	if(TRUE == bool_has_data)
-	{
-		/* queue data to be sent over UART */
-		HAL_UART_Transmit(&huart1, &u8_l_uart_data, 1, 500);
-	}
-	else
-	{
-		/* Do Nothing */
-	}
 }
-
-uint8_t myname[] = "Hossam";
-
-
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -543,18 +135,53 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* USER CODE BEGIN RTOS_MUTEX */
+  /* add mutexes, ... */
+  /* USER CODE END RTOS_MUTEX */
+
+  /* USER CODE BEGIN RTOS_SEMAPHORES */
+  /* add semaphores, ... */
+
+  /* Create semaphore for UART transmit task */
+  uartTransmitRequestSemaphore = xSemaphoreCreateBinary();
+
+  /* Take semaphore to block at startup */
+  xSemaphoreTake(uartTransmitRequestSemaphore , portMAX_DELAY);
+
+  /* USER CODE END RTOS_SEMAPHORES */
+
+  /* USER CODE BEGIN RTOS_TIMERS */
+  /* start timers, add new ones, ... */
+  /* USER CODE END RTOS_TIMERS */
+
+  /* USER CODE BEGIN RTOS_QUEUES */
+  /* add queues, ... */
+  uartTransmitQueue = xQueueCreate(APP_UART_TX_QUEUE_LENGTH, sizeof(st_uart_queue_item_t));
+
+  /* USER CODE END RTOS_QUEUES */
+
+  /* Create the thread(s) */
+  /* definition and creation of defaultTask */
+//  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+//  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
+  /* USER CODE BEGIN RTOS_THREADS */
+  /* add threads, ... */
+
+  xTaskCreate(task_process_can_data, "can2rc", APP_RTOS_TASK_STACK_SIZE, (void *) NULL, 0, (void *) NULL);
+
+  /* USER CODE END RTOS_THREADS */
+
+  /* Start scheduler */
+  osKernelStart();
+
+  /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-//	  while(*namePtr != NULL)
-//	  {
-//		  namePtr++;
-		  HAL_UART_Transmit(&huart1, myname, 2, 500);
-		  HAL_Delay(2);
-		  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_2);
-//	  }
 
+	  /* do nothing */
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -722,7 +349,353 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+
+void task_process_can_data(void * pvParameters)
+{
+	for(;;)
+	{
+		st_uart_queue_item_t st_l_uart_queue_item;
+		/* Dequeue / block until more data is available to dequeue */
+		xQueueReceive(uartTransmitQueue, &st_l_uart_queue_item, portMAX_DELAY);
+
+		/* variables */
+		BOOLEAN bool_has_data = FALSE;
+		uint8_t u8_l_uart_data = ZERO;
+		union
+		{
+			en_steering_state_t en_current_steering;
+			uint8_t 			u8_current_transmission_val;
+			uint32_t			u32_lights_val;
+			st_lighting_bits_t	st_lights_bits;
+		}un_local_temp_data;
+
+		/* Inline helping function(s) */
+		inline void app_calc_throttle_power_percentage(uint16_t u16_a_throttle_reading)
+		{
+			/* calculate throttle percentage */
+			u8_l_uart_data = (u16_a_throttle_reading * MAX_PERCENTAGE) / (THROTTLE_READING_REDUCTION_FACTOR);
+
+			/* raise UART send request flag */
+			bool_has_data = TRUE;
+		}
+
+		/* Map transmission state */
+		inline void app_map_transmission(void)
+		{
+			/* store current transmission value temporarily for readability */
+			un_local_temp_data.u8_current_transmission_val = st_l_uart_queue_item.un_data_converter.u8_rxNumber;
+
+			switch(un_local_temp_data.u8_current_transmission_val)
+			{
+				case APP_CAR_TRANSMISSION_PARK:
+				{
+					if(TRANSMISSION_STATE_PARKING != st_gs_last_data_state.en_transmission_state)
+					{
+						/* update global state */
+						st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_PARKING;
+
+						/* generate frame */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+						/* queue queue data and raise UART send request flag */
+						bool_has_data = TRUE;
+					}
+					else
+					{
+						/* duplicated data - ignore */
+					}
+
+					break;
+				}
+				case APP_CAR_TRANSMISSION_DRIVE:
+				{
+					if(TRANSMISSION_STATE_DRIVE != st_gs_last_data_state.en_transmission_state)
+					{
+						/* update global state */
+						st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_DRIVE;
+
+						/* generate frame */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+						/* queue queue data and raise UART send request flag */
+						bool_has_data = TRUE;
+					}
+					else
+					{
+						/* duplicated data - ignore */
+					}
+
+					break;
+				}
+				case APP_CAR_TRANSMISSION_NEUTRAL:
+				{
+					if(TRANSMISSION_STATE_NEUTRAL != st_gs_last_data_state.en_transmission_state)
+					{
+						/* update global state */
+						st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_NEUTRAL;
+
+						/* generate frame */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+						/* queue data and raise UART send request flag */
+						bool_has_data = TRUE;
+					}
+					else
+					{
+						/* duplicated data - ignore */
+					}
+
+					break;
+				}
+				case APP_CAR_TRANSMISSION_REVERSE:
+				{
+					if(TRANSMISSION_STATE_REVERSE != st_gs_last_data_state.en_transmission_state)
+					{
+						/* update global state */
+						st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_REVERSE;
+
+						/* generate frame */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+						/* queue data and raise UART send request flag */
+						bool_has_data = TRUE;
+					}
+					else
+					{
+						/* duplicated data - ignore */
+					}
+
+					break;
+				}
+
+				default:
+				{
+					/* Do Nothing */
+					break;
+				}
+			}
+		}
+
+		/* Map Steering Value */
+		inline void app_map_steering(uint8_t u8_a_steering_val)
+		{
+			un_local_temp_data.en_current_steering = STEERING_STATE_NONE;
+
+			/* check steering range */
+			/* invalid boundary check */
+			if(
+					(u8_a_steering_val > APP_CAR_STEERING_THRESHOLD_SHARP_LEFT_MAX) ||
+					(u8_a_steering_val < APP_CAR_STEERING_THRESHOLD_SHARP_RIGHT_MIN)
+			)
+			{
+				/* Invalid data - ignore */
+			}
+			/* decremental steering check */
+			else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_SHARP_LEFT_MIN)
+			{
+				/* sharp left */
+				un_local_temp_data.en_current_steering = STEERING_STATE_SHARP_LEFT;
+			}
+			else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_LEFT_MIN)
+			{
+				/* slight left */
+				un_local_temp_data.en_current_steering = STEERING_STATE_LEFT;
+			}
+			else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_STRAIGHT_MIN)
+			{
+				/* straight - no steering */
+				un_local_temp_data.en_current_steering = STEERING_STATE_STRAIGHT;
+			}
+			else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_RIGHT_MIN)
+			{
+				/* slight right */
+				un_local_temp_data.en_current_steering = STEERING_STATE_RIGHT;
+			}
+			else
+			{
+				/* sharp right */
+				un_local_temp_data.en_current_steering = STEERING_STATE_SHARP_RIGHT;
+			}
+
+			/* queue sending signal to ESP */
+			if(
+					(un_local_temp_data.en_current_steering != STEERING_STATE_NONE) &&
+					(un_local_temp_data.en_current_steering != st_gs_last_data_state.en_steering_state)
+				)
+			{
+				/* update last steering state */
+				st_gs_last_data_state.en_steering_state = un_local_temp_data.en_current_steering;
+
+				/* send data */
+				u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_STEERING, un_local_temp_data.en_current_steering);
+
+				/* raise send flag */
+				bool_has_data = TRUE;
+			}
+		}
+
+
+		/* Map Data */
+		switch (RxHeader.StdId)
+		{
+			case APP_CAN_ID_THROTTLE:
+			{
+				/* Map throttle values to 0 -> 100% */
+				app_calc_throttle_power_percentage(st_l_uart_queue_item.un_data_converter.u16_rxNumber);
+				break;
+			}
+			case APP_CAN_ID_STEERING:
+			{
+				/* Map steering values */
+				app_map_steering(st_l_uart_queue_item.un_data_converter.u8_rxNumber);
+				break;
+			}
+
+			case APP_CAN_ID_LIGHTS:
+			{
+				/* check if there's a change */
+				if(st_l_uart_queue_item.un_data_converter.u32_rxNumber != st_gs_last_data_state.u32_lighting_val)
+				{
+					/* changed - calculate changes */
+					un_local_temp_data.u32_lights_val = GET_CHANGED_BITS(st_gs_last_data_state.u32_lighting_val,
+							st_l_uart_queue_item.un_data_converter.u32_rxNumber);
+
+					/* update last state global variable */
+					st_gs_last_data_state.u32_lighting_val = st_l_uart_queue_item.un_data_converter.u32_rxNumber;
+
+					/* check changed lights */
+					if(un_local_temp_data.st_lights_bits.u32_bit21_brake_lights)
+					{
+						/* brake lights state changed - toggle last state */
+						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_break_lights);
+
+						/* queue to ESP */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_break_lights);
+
+						/* raise flag */
+						bool_has_data = TRUE;
+					}
+					if(un_local_temp_data.st_lights_bits.u32_bit8_left_indicator)
+					{
+						/* brake lights state changed - toggle last state */
+						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_left_indicator);
+
+						if(
+								(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
+									st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
+									(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
+								)
+						{
+							/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
+							/* update hazard global state */
+							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
+
+
+							/* queue to ESP */
+							u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
+
+						}else
+						{
+							/* turn off hazard state */
+							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
+
+							/* queue to ESP */
+							u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_left_indicator);
+						}
+
+
+						/* raise flag */
+						bool_has_data = TRUE;
+					}
+					if(un_local_temp_data.st_lights_bits.u32_bit18_right_indicator)
+					{
+						/* brake lights state changed - toggle last state */
+						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+
+						if(
+								(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
+									st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
+									(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
+								)
+						{
+							/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
+							/* update hazard global state */
+							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
+
+
+							/* queue to ESP */
+							u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
+
+						}else
+						{
+							/* turn off hazard state */
+							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
+
+							/* queue to ESP */
+							u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+						}
+
+
+						/* raise flag */
+						bool_has_data = TRUE;
+					}
+
+				}
+				else
+				{
+					/* no change - do nothing */
+				}
+
+
+
+				break;
+			}
+			case APP_CAN_ID_TRANSMISSION:
+			{
+				/* check transmission state */
+				app_map_transmission();
+				break;
+			}
+
+			default:
+			{
+				/* Do Nothing */
+				break;
+			}
+		}
+
+		/* Dispatch to UART */
+		if(TRUE == bool_has_data)
+		{
+			/* queue data to be sent over UART */
+			HAL_UART_Transmit(&huart1, &u8_l_uart_data, 1, 500);
+		}
+		else
+		{
+			/* Do Nothing */
+		}
+	}
+}
+
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void const * argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+  for(;;)
+  {
+    osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
 
 /**
   * @brief  Period elapsed callback in non blocking mode
