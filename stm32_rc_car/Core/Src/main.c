@@ -78,6 +78,13 @@
 /* SAKR END */
 
 /* NORHAN BEGIN */
+#define LEDS_BRAKING 10
+#define LEDS_FWD 15
+#define LEDS_BWD 20
+#define LED_LEFT_SIGNAL 25
+#define LED_RIGHT_SIGNAL 30
+
+
 /* NORHAN END */
 
 /* AHMED BEGIN */
@@ -122,13 +129,7 @@ TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart1;
 
-/* Definitions for defaultTask */
-osThreadId_t defaultTaskHandle;
-const osThreadAttr_t defaultTask_attributes = {
-  .name = "defaultTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128 * 4
-};
+osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
   /* NADA BEGIN */
@@ -138,6 +139,10 @@ const osThreadAttr_t defaultTask_attributes = {
   /* SAKR END */
 
   /* NORHAN BEGIN */
+TaskHandle_t Lights_Handle = NULL;
+TaskHandle_t Lights_Test = NULL;
+QueueHandle_t Lights_Queue;
+SemaphoreHandle_t Lights_Semaphore;
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -158,7 +163,7 @@ static void MX_TIM3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
-void StartDefaultTask(void *argument);
+void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -169,6 +174,8 @@ void StartDefaultTask(void *argument);
 /* SAKR END */
 
 /* NORHAN BEGIN */
+void LightingSystem(void);
+void LightingTesting(void);
 /* NORHAN END */
 
 /* AHMED BEGIN */
@@ -300,6 +307,21 @@ int main(void)
   /* SAKR END */
 
   /* NORHAN BEGIN */
+  xTaskCreate(
+  		  	  	 LightingSystem,       /* Function that implements the task. */
+                "Lightings",          /* Text name for the task. */
+                 128,      /* Stack size in words, not bytes. */
+                 ( void * ) NULL,    /* Parameter passed into the task. */
+                 1,/* Priority at which the task is created. */
+                 &Lights_Handle );      /* Used to pass out the created task's handle. */
+  xTaskCreate(
+  		  	  	 LightingTesting,       /* Function that implements the task. */
+                "Testinggg",          /* Text name for the task. */
+                 128,      /* Stack size in words, not bytes. */
+                 ( void * ) NULL,    /* Parameter passed into the task. */
+                 1,/* Priority at which the task is created. */
+                 &Lights_Test );      /* Used to pass out the created task's handle. */
+
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -312,9 +334,6 @@ int main(void)
   /* SALMA END */
 
   /* USER CODE END 2 */
-
-  /* Init scheduler */
-  osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -350,6 +369,7 @@ int main(void)
   /* SAKR END */
 
   /* NORHAN BEGIN */
+  Lights_Semaphore = xSemaphoreCreateBinary();
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -396,6 +416,7 @@ int main(void)
   /* SAKR END */
 
   /* NORHAN BEGIN */
+  Lights_Queue = xQueueCreate( 10, sizeof( uint8_t ));
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -410,8 +431,9 @@ int main(void)
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  /* definition and creation of defaultTask */
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -474,6 +496,65 @@ int main(void)
   /* SAKR END */
 
   /* NORHAN BEGIN */
+  void LightingSystem(void){
+	  uint8_t messagesWaiting =0;
+	  uint8_t ledtopoweron =0;
+	  xSemaphoreTake(Lights_Semaphore, portMAX_DELAY);
+	  for(;;){
+		  xSemaphoreTake(Lights_Semaphore, portMAX_DELAY);
+		  messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
+		  while (messagesWaiting != 0 ){
+			  xQueueReceive( Lights_Queue, &ledtopoweron ,portMAX_DELAY);
+			  if (ledtopoweron == LEDS_BRAKING)
+			  {
+				  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin, GPIO_PIN_SET);
+			  }
+			  else if (ledtopoweron == LEDS_FWD)
+			  {
+				  HAL_GPIO_WritePin(GPIOB, LED_REVERSE_Pin, GPIO_PIN_SET);
+			  }
+			  else if (ledtopoweron == LEDS_BWD)
+			  {
+				  HAL_GPIO_WritePin(GPIOB, LED_FRONT_Pin, GPIO_PIN_SET);
+			  }
+			  else if (ledtopoweron == LED_LEFT_SIGNAL)
+			  {
+				  HAL_GPIO_WritePin(GPIOB, LED_RIGHT_Pin, GPIO_PIN_SET);
+			  }
+			  else if (ledtopoweron== LED_RIGHT_SIGNAL)
+			  {
+				  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin|LED_REVERSE_Pin|LED_FRONT_Pin|LED_RIGHT_Pin, GPIO_PIN_SET);
+			  }
+
+
+			  messagesWaiting--;
+
+
+		  }
+	  }
+
+
+  }
+
+  void LightingTesting(void){
+	  uint8_t buttonsclicked =0;
+	  for(;;)
+	  {
+		  if (HAL_GPIO_ReadPin(GPIOB , GPIO_PIN_11)==0)
+		  {
+			  buttonsclicked = 10;
+			  xQueueSend( Lights_Queue, &buttonsclicked ,portMAX_DELAY);
+		  }
+		  else if (HAL_GPIO_ReadPin(GPIOB , GPIO_PIN_10)==0)
+		  {
+			  buttonsclicked = 15;
+			  xQueueSend( Lights_Queue, &buttonsclicked ,portMAX_DELAY);
+		  }
+	  }
+
+  }
+
+
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -764,7 +845,7 @@ static void MX_GPIO_Init(void)
   * @retval None
   */
 /* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void *argument)
+void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */

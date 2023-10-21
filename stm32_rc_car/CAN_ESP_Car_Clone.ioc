@@ -1,6 +1,6 @@
 #MicroXplorer Configuration settings - do not modify
 FREERTOS.IPParameters=Tasks01
-FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.Tasks01=defaultTask,0,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
 File.Version=6
 GPIO.groupedBy=Group By Peripherals
 KeepUserPlacement=false
@@ -30,7 +30,7 @@ Mcu.Pin18=PB7
 Mcu.Pin19=PB8
 Mcu.Pin2=PA1
 Mcu.Pin20=PB9
-Mcu.Pin21=VP_FREERTOS_VS_CMSIS_V2
+Mcu.Pin21=VP_FREERTOS_VS_CMSIS_V1
 Mcu.Pin22=VP_SYS_VS_tim2
 Mcu.Pin23=VP_TIM1_VS_ClockSourceINT
 Mcu.Pin24=VP_TIM3_VS_ClockSourceINT
@@ -201,8 +201,8 @@ TIM3.Channel-PWM\ Generation1\ CH1=TIM_CHANNEL_1
 TIM3.IPParameters=Channel-PWM Generation1 CH1
 USART1.IPParameters=VirtualMode
 USART1.VirtualMode=VM_ASYNC
-VP_FREERTOS_VS_CMSIS_V2.Mode=CMSIS_V2
-VP_FREERTOS_VS_CMSIS_V2.Signal=FREERTOS_VS_CMSIS_V2
+VP_FREERTOS_VS_CMSIS_V1.Mode=CMSIS_V1
+VP_FREERTOS_VS_CMSIS_V1.Signal=FREERTOS_VS_CMSIS_V1
 VP_SYS_VS_tim2.Mode=TIM2
 VP_SYS_VS_tim2.Signal=SYS_VS_tim2
 VP_TIM1_VS_ClockSourceINT.Mode=Internal
