@@ -2,3 +2,6 @@
 RemoteSystemsTempFiles/
 */Debug/*
 .mxproject
+stm32_real_car/cmake-build-debug/
+
+stm32_real_car/.idea/
