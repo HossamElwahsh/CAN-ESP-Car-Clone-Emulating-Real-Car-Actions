@@ -21,8 +21,8 @@ typedef unsigned char boolean;
 #define UINT32_MAX_VAL 0xFFFFFFFF
 
 #define MAX_PERCENTAGE 						100UL
-#define THROTTLE_READING_REDUCTION_FACTOR 	250 * 64UL
 
+#define SIZE_ONE_BIT 1
 /* LIGHTS MAPPED BYTES */
 
 

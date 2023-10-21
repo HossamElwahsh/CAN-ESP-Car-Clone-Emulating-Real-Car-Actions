@@ -48,13 +48,115 @@ UART_HandleTypeDef huart1;
 CAN_FilterTypeDef FilterConfig;
 CAN_RxHeaderTypeDef RxHeader; //structure for message reception
 
+
+typedef struct
+{
+	BOOLEAN bool_break_lights		:	SIZE_ONE_BIT;
+	BOOLEAN bool_front_lights		:	SIZE_ONE_BIT;
+	BOOLEAN bool_reverse_lights		:	SIZE_ONE_BIT;
+	BOOLEAN bool_left_indicator		:	SIZE_ONE_BIT;
+	BOOLEAN bool_right_indicator	:	SIZE_ONE_BIT;
+	BOOLEAN bool_hazard_indicator	:	SIZE_ONE_BIT;
+	BOOLEAN bool_reserved_1			:	SIZE_ONE_BIT;
+	BOOLEAN bool_reserved_2			:	SIZE_ONE_BIT;
+}st_lighting_state_t;
+
+typedef enum
+{
+	TRANSMISSION_STATE_NONE		=	ZERO	,
+	TRANSMISSION_STATE_PARKING				,
+	TRANSMISSION_STATE_REVERSE				,
+	TRANSMISSION_STATE_NEUTRAL				,
+	TRANSMISSION_STATE_DRIVE				,
+	TRANSMISSION_STATE_TOTAL				,
+}en_transmission_state_t;
+
+typedef enum
+{
+	STEERING_STATE_NONE			=	ZERO								,
+	STEERING_STATE_STRAIGHT		= APP_ESP_DATA_STEERING_STRAIGHT		,
+	STEERING_STATE_LEFT			= APP_ESP_DATA_STEERING_LEFT			,
+	STEERING_STATE_SHARP_LEFT	= APP_ESP_DATA_STEERING_SHARP_LEFT		,
+	STEERING_STATE_RIGHT		= APP_ESP_DATA_STEERING_RIGHT			,
+	STEERING_STATE_SHARP_RIGHT	= APP_ESP_DATA_STEERING_SHARP_RIGHT		,
+	STEERING_STATE_TOTAL
+}en_steering_state_t;
+
+/* Saves last sent data states to prevent duplicate unnecessary sends */
+typedef struct
+{
+	/* lighting value */
+	uint32_t u32_lighting_val;
+
+	/* throttle value */
+	uint8_t u8_throttle_val;
+
+	/* lighting value */
+	st_lighting_state_t st_lighting_state;
+
+	/* transmission state */
+	en_transmission_state_t en_transmission_state;
+
+	/* steering state */
+	en_steering_state_t en_steering_state;
+
+}st_last_data_state_t;
+
+typedef struct
+{
+	/* byte 1 */
+	uint32_t u32_unused_bit0:1;
+	uint32_t u32_unused_bit1:1;
+	uint32_t u32_unused_bit2:1;
+	uint32_t u32_unused_bit3:1;
+	uint32_t u32_unused_bit4:1;
+	uint32_t u32_unused_bit5:1;
+	uint32_t u32_unused_bit6:1;
+	uint32_t u32_unused_bit7:1;
+
+	/* byte 2 */
+	uint32_t u32_bit8_left_indicator:1;
+	uint32_t u32_unused_bit9:1;
+	uint32_t u32_unused_bit10:1;
+	uint32_t u32_unused_bit11:1;
+	uint32_t u32_unused_bit12:1;
+	uint32_t u32_unused_bit13:1;
+	uint32_t u32_unused_bit14:1;
+	uint32_t u32_unused_bit15:1;
+
+
+	/* byte 3 */
+	uint32_t u32_unused_bit16:1;
+	uint32_t u32_unused_bit17:1;
+	uint32_t u32_bit18_right_indicator:1;
+	uint32_t u32_unused_bit19:1;
+	uint32_t u32_unused_bit20:1;
+	uint32_t u32_bit21_brake_lights:1;
+	uint32_t u32_unused_bit22:1;
+	uint32_t u32_unused_bit23:1;
+
+	/* byte 4 */
+	uint32_t u32_unused_bit24:1;
+	uint32_t u32_unused_bit25:1;
+	uint32_t u32_unused_bit26:1;
+	uint32_t u32_unused_bit27:1;
+	uint32_t u32_unused_bit28:1;
+	uint32_t u32_unused_bit29:1;
+	uint32_t u32_unused_bit30:1;
+	uint32_t u32_unused_bit31:1;
+}st_lighting_bits_t;
+
 /* Converter union for RxData */
 union
 {
-	uint8_t RxData[APP_RX_DATA_LENGTH];	// Receive buffer
-	uint16_t u16_rxNumber;
-	uint32_t u32_rxNumber;
+	uint8_t 	RxData[APP_RX_DATA_LENGTH];	// Receive buffer
+	uint8_t		u8_rxNumber;
+	uint16_t 	u16_rxNumber;
+	uint32_t 	u32_rxNumber;
+	st_lighting_bits_t u8_lighting_bits;
 }un_gs_RxConv;
+
+static st_last_data_state_t st_gs_last_data_state;
 
 /* USER CODE END PV */
 
@@ -71,25 +173,188 @@ static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN 0 */
 
 
-inline uint8_t app_calc_throttle_power_percentage(uint16_t u16_a_throttle_reading)
-{
-	uint8_t u8_l_retval = ZERO;
-
-	u8_l_retval = (u16_a_throttle_reading * MAX_PERCENTAGE) / (THROTTLE_READING_REDUCTION_FACTOR);
-
-	return u8_l_retval;
-
-}
-
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
 	/* variables */
 	BOOLEAN bool_has_data = FALSE;
 	uint8_t u8_l_uart_data = ZERO;
+	union
+	{
+		en_steering_state_t en_current_steering;
+		uint8_t 			u8_current_transmission_val;
+		uint32_t			u32_lights_val;
+		st_lighting_bits_t	st_lights_bits;
+	}un_local_temp_data;
 
 
 	/* Read Message into local buffer [RxData] */
 	HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, un_gs_RxConv.RxData);
+
+	/* Inline helping function(s) */
+	inline void app_calc_throttle_power_percentage(uint16_t u16_a_throttle_reading)
+	{
+		/* calculate throttle percentage */
+		u8_l_uart_data = (u16_a_throttle_reading * MAX_PERCENTAGE) / (THROTTLE_READING_REDUCTION_FACTOR);
+
+		/* raise UART send request flag */
+		bool_has_data = TRUE;
+	}
+
+	/* Map transmission state */
+	inline void app_map_transmission(void)
+	{
+		/* store current transmission value temporarily for readability */
+		un_local_temp_data.u8_current_transmission_val = un_gs_RxConv.u8_rxNumber;
+
+		switch(un_local_temp_data.u8_current_transmission_val)
+		{
+			case APP_CAR_TRANSMISSION_PARK:
+			{
+				if(TRANSMISSION_STATE_PARKING != st_gs_last_data_state.en_transmission_state)
+				{
+					/* update global state */
+					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_PARKING;
+
+					/* generate frame */
+					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+					/* queue queue data and raise UART send request flag */
+					bool_has_data = TRUE;
+				}
+				else
+				{
+					/* duplicated data - ignore */
+				}
+
+				break;
+			}
+			case APP_CAR_TRANSMISSION_DRIVE:
+			{
+				if(TRANSMISSION_STATE_DRIVE != st_gs_last_data_state.en_transmission_state)
+				{
+					/* update global state */
+					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_DRIVE;
+
+					/* generate frame */
+					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+					/* queue queue data and raise UART send request flag */
+					bool_has_data = TRUE;
+				}
+				else
+				{
+					/* duplicated data - ignore */
+				}
+
+				break;
+			}
+			case APP_CAR_TRANSMISSION_NEUTRAL:
+			{
+				if(TRANSMISSION_STATE_NEUTRAL != st_gs_last_data_state.en_transmission_state)
+				{
+					/* update global state */
+					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_NEUTRAL;
+
+					/* generate frame */
+					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+					/* queue queue data and raise UART send request flag */
+					bool_has_data = TRUE;
+				}
+				else
+				{
+					/* duplicated data - ignore */
+				}
+
+				break;
+			}
+			case APP_CAR_TRANSMISSION_REVERSE:
+			{
+				if(TRANSMISSION_STATE_REVERSE != st_gs_last_data_state.en_transmission_state)
+				{
+					/* update global state */
+					st_gs_last_data_state.en_transmission_state = TRANSMISSION_STATE_REVERSE;
+
+					/* generate frame */
+					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_TRANSMISSION, SHIFT_HIGH_NIBBLE_TO_LOW(un_local_temp_data.u8_current_transmission_val));
+
+					/* queue queue data and raise UART send request flag */
+					bool_has_data = TRUE;
+				}
+				else
+				{
+					/* duplicated data - ignore */
+				}
+
+				break;
+			}
+
+			default:
+			{
+				/* Do Nothing */
+				break;
+			}
+		}
+	}
+
+	/* Map Steering Value */
+	inline void app_map_steering(uint8_t u8_a_steering_val)
+	{
+		un_local_temp_data.en_current_steering = STEERING_STATE_NONE;
+
+		/* check steering range */
+		/* invalid boundary check */
+		if(
+				(u8_a_steering_val > APP_CAR_STEERING_THRESHOLD_SHARP_LEFT_MAX) ||
+				(u8_a_steering_val < APP_CAR_STEERING_THRESHOLD_SHARP_RIGHT_MIN)
+		)
+		{
+			/* Invalid data - ignore */
+		}
+		/* decremental steering check */
+		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_SHARP_LEFT_MIN)
+		{
+			/* sharp left */
+			un_local_temp_data.en_current_steering = STEERING_STATE_SHARP_LEFT;
+		}
+		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_LEFT_MIN)
+		{
+			/* slight left */
+			un_local_temp_data.en_current_steering = STEERING_STATE_LEFT;
+		}
+		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_STRAIGHT_MIN)
+		{
+			/* straight - no steering */
+			un_local_temp_data.en_current_steering = STEERING_STATE_STRAIGHT;
+		}
+		else if(u8_a_steering_val >= APP_CAR_STEERING_THRESHOLD_RIGHT_MIN)
+		{
+			/* slight right */
+			un_local_temp_data.en_current_steering = STEERING_STATE_RIGHT;
+		}
+		else
+		{
+			/* sharp right */
+			un_local_temp_data.en_current_steering = STEERING_STATE_SHARP_RIGHT;
+		}
+
+		/* queue sending signal to ESP */
+		if(
+				(un_local_temp_data.en_current_steering != STEERING_STATE_NONE) &&
+				(un_local_temp_data.en_current_steering != st_gs_last_data_state.en_steering_state)
+			)
+		{
+			/* update last steering state */
+			st_gs_last_data_state.en_steering_state = un_local_temp_data.en_current_steering;
+
+			/* send data */
+			u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_STEERING, un_local_temp_data.en_current_steering);
+
+			/* raise send flag */
+			bool_has_data = TRUE;
+		}
+	}
+
 
 	/* Map Data */
 	switch (RxHeader.StdId)
@@ -97,22 +362,124 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 		case APP_CAN_ID_THROTTLE:
 		{
 			/* Map throttle values to 0 -> 100% */
-			uint8_l_throttle_percentage = app_calc_throttle_power_percentage(un_gs_RxConv.u16_rxNumber);
-			bool_has_data = TRUE;
+			app_calc_throttle_power_percentage(un_gs_RxConv.u16_rxNumber);
+			break;
+		}
+		case APP_CAN_ID_STEERING:
+		{
+			/* Map steering values */
+			app_map_steering(un_gs_RxConv.u8_rxNumber);
 			break;
 		}
 
 		case APP_CAN_ID_LIGHTS:
 		{
+			/* check if there's a change */
+			if(un_gs_RxConv.u32_rxNumber != st_gs_last_data_state.u32_lighting_val)
+			{
+				/* changed - calculate changes */
+				un_local_temp_data.u32_lights_val = GET_CHANGED_BITS(st_gs_last_data_state.u32_lighting_val, un_gs_RxConv.u32_rxNumber);
+
+				/* update last state global variable */
+				st_gs_last_data_state.u32_lighting_val = un_gs_RxConv.u32_rxNumber;
+
+				/* check changed lights */
+				if(un_local_temp_data.st_lights_bits.u32_bit21_brake_lights)
+				{
+					/* brake lights state changed - toggle last state */
+					TOGGLE(st_gs_last_data_state.st_lighting_state.bool_break_lights);
+
+					/* queue to ESP */
+					u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_break_lights);
+
+					/* raise flag */
+					bool_has_data = TRUE;
+				}
+				if(un_local_temp_data.st_lights_bits.u32_bit8_left_indicator)
+				{
+					/* brake lights state changed - toggle last state */
+					TOGGLE(st_gs_last_data_state.st_lighting_state.bool_left_indicator);
+
+					if(
+							(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
+								st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
+								(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
+							)
+					{
+						/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
+						/* update hazard global state */
+						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
+
+
+						/* queue to ESP */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
+
+					}else
+					{
+						/* turn off hazard state */
+						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
+
+						/* queue to ESP */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_left_indicator);
+					}
+
+
+					/* raise flag */
+					bool_has_data = TRUE;
+				}
+				if(un_local_temp_data.st_lights_bits.u32_bit18_right_indicator)
+				{
+					/* brake lights state changed - toggle last state */
+					TOGGLE(st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+
+					if(
+							(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
+								st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
+								(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
+							)
+					{
+						/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
+						/* update hazard global state */
+						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
+
+
+						/* queue to ESP */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
+
+					}else
+					{
+						/* turn off hazard state */
+						st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
+
+						/* queue to ESP */
+						u8_l_uart_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+					}
+
+
+					/* raise flag */
+					bool_has_data = TRUE;
+				}
+
+			}
+			else
+			{
+				/* no change - do nothing */
+			}
+
+
+
 			break;
 		}
 		case APP_CAN_ID_TRANSMISSION:
 		{
+			/* check transmission state */
+			app_map_transmission();
 			break;
 		}
 
 		default:
 		{
+			/* Do Nothing */
 			break;
 		}
 	}
@@ -121,6 +488,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	if(TRUE == bool_has_data)
 	{
 		/* queue data to be sent over UART */
+		HAL_UART_Transmit(&huart1, &u8_l_uart_data, 1, 500);
 	}
 	else
 	{
@@ -128,7 +496,14 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	}
 }
 
+uint8_t myname[] = "Hossam";
 
+
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	volatile boolean sent = TRUE;
+}
 /* USER CODE END 0 */
 
 /**
@@ -163,12 +538,23 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
+//  uint8_t * namePtr = NULL;
+//  namePtr = myname;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+//	  while(*namePtr != NULL)
+//	  {
+//		  namePtr++;
+		  HAL_UART_Transmit(&huart1, myname, 2, 500);
+		  HAL_Delay(2);
+		  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_2);
+//	  }
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -188,10 +574,13 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -200,12 +589,12 @@ void SystemClock_Config(void)
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -313,15 +702,48 @@ static void MX_USART1_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PA2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
 }
 
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM1 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM1) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
