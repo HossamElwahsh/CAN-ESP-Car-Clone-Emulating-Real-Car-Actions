@@ -35,6 +35,11 @@
 /* NORHAN END */
 
 /* AHMED BEGIN */
+#include "fonts.h"
+#include "ssd1306.h"
+#include "test.h"
+#include "bitmap.h"
+#include "horse_anim.h"
 /* AHMED END */
 
 /* HOSSAM BEGIN */
@@ -58,6 +63,12 @@
 /* NORHAN END */
 
 /* AHMED BEGIN */
+typedef enum{
+	Neutral =0X70,
+	Drive=0x71,
+	Reverse=0X77,
+	Parking=0x7F
+}transmission_en;
 /* AHMED END */
 
 /* HOSSAM BEGIN */
@@ -146,6 +157,7 @@ SemaphoreHandle_t Lights_Semaphore;
   /* NORHAN END */
 
   /* AHMED BEGIN */
+
   /* AHMED END */
 
   /* HOSSAM BEGIN */
@@ -160,7 +172,6 @@ SemaphoreHandle_t Lights_Semaphore;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_I2C1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
 void StartDefaultTask(void const * argument);
@@ -325,6 +336,7 @@ int main(void)
   /* NORHAN END */
 
   /* AHMED BEGIN */
+	
   /* AHMED END */
 
   /* HOSSAM BEGIN */
@@ -348,6 +360,9 @@ int main(void)
   /* NORHAN END */
 
   /* AHMED BEGIN */
+	SSD1306_Init (); // initialize the display
+	osThreadDef(oled, OLED_Function, osPriorityLow, 0, 128);
+  	oledHandle = osThreadCreate(osThread(oled), NULL);
   /* AHMED END */
 
   /* HOSSAM BEGIN */
@@ -626,7 +641,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -852,6 +867,55 @@ void StartDefaultTask(void const * argument)
   for(;;)
   {
     osDelay(1);
+  }
+  /* USER CODE END 5 */
+}
+
+
+/* USER CODE BEGIN Header_OLED_Function */
+/**
+  * @brief  Function implementing the oled thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_OLED_Function */
+void OLED_Function(void const * argument)
+{
+  /* USER CODE BEGIN 5 */
+  /* Infinite loop */
+	xSemaphoreTake(semaphore_transmissionHandleHandle,-1);
+  for(;;)
+  {
+	  xSemaphoreTake(semaphore_transmissionHandleHandle,-1);
+	  SSD1306_Clear();
+	  SSD1306_GotoXY (10,10); // goto 10, 10
+	    SSD1306_Puts ("Current mode:", &Font_7x10, 1); // print Hello
+
+	    if(gl_transmission_en == Neutral)
+	    {
+	    	SSD1306_GotoXY (40, 30);
+	    	SSD1306_Puts ("N", &Font_11x18, 1);
+	    }
+	    else if(gl_transmission_en == Parking)
+	    {
+	    	SSD1306_GotoXY (55, 30);
+	    	SSD1306_Puts ("P", &Font_11x18, 1);
+	    }
+	    else if(gl_transmission_en == Drive)
+	    {
+	    	SSD1306_GotoXY (10, 30);
+	    	SSD1306_Puts ("D", &Font_11x18, 1);
+	    }
+	    else if(gl_transmission_en == Reverse)
+	    {
+	    	SSD1306_GotoXY (25, 30);
+	    	SSD1306_Puts ("R", &Font_11x18, 1);
+	    }
+	    else
+	    {
+	    	/*		DO NOTHING		*/
+	    }
+	    SSD1306_UpdateScreen(); // update screen
   }
   /* USER CODE END 5 */
 }
