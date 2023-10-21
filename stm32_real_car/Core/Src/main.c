@@ -264,13 +264,13 @@ static void MX_CAN_Init(void)
     /* set FIFO assignment */
     FilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
     /* 0x245<<5; the ID that the filter looks for: Zero to pass all IDs */
-    FilterConfig.FilterIdHigh = 0;
-    FilterConfig.FilterIdLow = 0;
-    FilterConfig.FilterMaskIdHigh = 0;
-    FilterConfig.FilterMaskIdLow = 0;
+    FilterConfig.FilterIdHigh = APP_CAN_ID_STEERING;
+    FilterConfig.FilterIdLow = APP_CAN_ID_STEERING;
+    FilterConfig.FilterMaskIdHigh = 0xFFFF;
+    FilterConfig.FilterMaskIdLow = 0xFFFF;
 
     /* Set Filter Scale */
-    FilterConfig.FilterScale = CAN_FILTERSCALE_32BIT; //set filter scale
+    FilterConfig.FilterScale = CAN_FILTERSCALE_16BIT; //set filter scale
 
     /* Enable Filter */
     FilterConfig.FilterActivation = ENABLE;
