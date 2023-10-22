@@ -76,23 +76,23 @@ typedef struct
 	uint32_t u32_unused_bit7:1;
 
 	/* byte 2 */
-	uint32_t u32_bit8_left_indicator:1;
+	uint32_t u32_unused_bit8:1;
 	uint32_t u32_unused_bit9:1;
 	uint32_t u32_unused_bit10:1;
 	uint32_t u32_unused_bit11:1;
-	uint32_t u32_unused_bit12:1;
+    uint32_t u32_unused_bit12:1;
 	uint32_t u32_unused_bit13:1;
 	uint32_t u32_unused_bit14:1;
-	uint32_t u32_unused_bit15:1;
+	uint32_t u32_left_indicator_bit:1;
 
 
 	/* byte 3 */
 	uint32_t u32_unused_bit16:1;
 	uint32_t u32_unused_bit17:1;
-	uint32_t u32_bit18_right_indicator:1;
+    uint32_t u32_brake_lights_bit:1;
 	uint32_t u32_unused_bit19:1;
 	uint32_t u32_unused_bit20:1;
-	uint32_t u32_bit21_brake_lights:1;
+	uint32_t u32_right_indicator_bit:1;
 	uint32_t u32_unused_bit22:1;
 	uint32_t u32_unused_bit23:1;
 
