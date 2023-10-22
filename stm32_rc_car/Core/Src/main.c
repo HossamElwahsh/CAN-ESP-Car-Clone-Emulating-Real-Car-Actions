@@ -144,10 +144,22 @@ osThreadId defaultTaskHandle;
 
   /* NORHAN BEGIN */
 TaskHandle_t Lights_Handle = NULL;
-TaskHandle_t Left_LED_Blink = NULL;
-TaskHandle_t Right_LED_Blink = NULL;
+TaskHandle_t LED_Blink_Handle = NULL;
 QueueHandle_t Lights_Queue;
 SemaphoreHandle_t Semaphore_Lights;
+
+typedef enum{
+	ON,
+	OFF
+}LEFT_LED_STATUS;
+
+typedef enum{
+	ON,
+	OFF
+}RIGHT_LED_STATUS;
+
+LEFT_LED_STATUS Left_led_flag = OFF;
+RIGHT_LED_STATUS Right_led_flag = OFF;
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -322,19 +334,13 @@ int main(void)
                  &Lights_Handle );      /* Used to pass out the created task's handle. */
 
   xTaskCreate(
-		  	  	 LeftBlinking,       /* Function that implements the task. */
-                "leftBlinking",          /* Text name for the task. */
+		  	  	 Blinking,       /* Function that implements the task. */
+                "Blinking",          /* Text name for the task. */
                  128,      /* Stack size in words, not bytes. */
                  ( void * ) NULL,    /* Parameter passed into the task. */
                  1,/* Priority at which the task is created. */
-                 &Left_LED_Blink );      /* Used to pass out the created task's handle. */
-  xTaskCreate(
-		  	  	 RightBlinking,       /* Function that implements the task. */
-                "rightBlinking",          /* Text name for the task. */
-                 128,      /* Stack size in words, not bytes. */
-                 ( void * ) NULL,    /* Parameter passed into the task. */
-                 1,/* Priority at which the task is created. */
-                 &Right_LED_Blink );      /* Used to pass out the created task's handle. */
+                 &LED_Blink );      /* Used to pass out the created task's handle. */
+
 
   /* NORHAN END */
 
@@ -517,72 +523,58 @@ int main(void)
 
   /* NORHAN BEGIN */
   void LightingSystem(void){
+	  lights_en LedToPowerOn ;
 	  uint8_t messagesWaiting =0;
-	  uint8_t LedToPowerOn =0;
 	  xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
 	  for(;;){
-
 		  xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
 		  messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
 		  while (messagesWaiting != 0 ){
 			  xQueueReceive( Lights_Queue, &LedToPowerOn ,portMAX_DELAY);
 			  if (LedToPowerOn == brake_lights_off)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin, GPIO_PIN_RESET);
+				  HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_RESET);
 			  }
 			  else if (LedToPowerOn == brake_lights_on)
 			  {
-			  	  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin, GPIO_PIN_SET);
+			  	  HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_SET);
 			  }
 			  else if (LedToPowerOn == front_lights_off)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_FRONT_Pin, GPIO_PIN_RESET);
+				  HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_RESET);
 			  }
 			  else if (LedToPowerOn == front_lights_on)
 			  {
-			  	  HAL_GPIO_WritePin(GPIOB, LED_FRONT_Pin, GPIO_PIN_SET);
+			  	  HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_SET);
 			  }
 			  else if (LedToPowerOn == reverse_lights_off)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_REVERSE_Pin, GPIO_PIN_RESET);
+				  HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_RESET);
 			  }
 			  else if (LedToPowerOn == reverse_lights_on)
 			  {
-			  	  HAL_GPIO_WritePin(GPIOB, LED_REVERSE_Pin, GPIO_PIN_SET);
+			  	  HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_SET);
 			  }
 			  else if (LedToPowerOn == left_indicators_off)
 			  {
-				  vTaskSuspend(Left_LED_Blink);
-
+				  Left_led_flag= OFF;
+				  vTaskSuspend(LED_Blink);
 			  }
 			  else if (LedToPowerOn == left_indicators_on)
 			  {
-				  vTaskResume(Left_LED_Blink);
-
+				  Left_led_flag= ON;
+				  vTaskResume(LED_Blink);
 			  }
 			  else if (LedToPowerOn == right_indicators_off)
 			  {
-				  vTaskSuspend(Right_LED_Blink);
-
+				  Right_led_flag= OFF;
+				  vTaskSuspend(LED_Blink);
 			  }
 			  else if (LedToPowerOn == right_indicators_on)
 			  {
-				  vTaskResume(Right_LED_Blink);
-
+				  Right_led_flag= ON;
+				  vTaskResume(LED_Blink);
 			  }
-			  else if (LedToPowerOn == hazard_indicators_off)
-			  {
-				  vTaskSuspend(Left_LED_Blink);
-				  vTaskSuspend(Right_LED_Blink);
-
-			  }
-			  else if (LedToPowerOn == hazard_indicators_on)
-			  {
-				  vTaskResume(Left_LED_Blink);
-				  vTaskResume(Right_LED_Blink);
-
-			  }
-
 
 			  messagesWaiting--;
 
@@ -593,22 +585,31 @@ int main(void)
 
   }
 
-  void LeftBlinking(void){
-	  vTaskSuspend(Left_LED_Blink);
+  void Blinking(void){
+	  vTaskSuspend(LED_Blink);
 
 	  for(;;){
+		  if (Right_led_flag== ON)
+		  {
+			  HAL_GPIO_TogglePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin);
+		  }
+		  else if (Right_led_flag== OFF)
+		  {
+			  HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, GPIO_PIN_RESET);
+		  }
 
-		  HAL_GPIO_TogglePin(GPIOA, LED_LEFT_Pin);
-		  osDelay(500);
-	  }
 
-  }
+		  if (Left_led_flag== ON)
+		  {
+			  HAL_GPIO_TogglePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin);
+		  }
+		  else if (Left_led_flag== OFF)
+		  {
+			  HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, GPIO_PIN_RESET);
+		  }
 
-  void RightBlinking(void){
-	  vTaskSuspend(Right_LED_Blink);
-	  for(;;){
 
-		  HAL_GPIO_TogglePin(GPIOB, LED_RIGHT_Pin);
+
 		  osDelay(500);
 	  }
 
