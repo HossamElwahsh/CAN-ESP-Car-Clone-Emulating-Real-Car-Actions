@@ -34,7 +34,7 @@ typedef enum
 
 typedef enum
 {
-	STEERING_STATE_NONE			=	ZERO								,
+	STEERING_STATE_NONE			= APP_ESP_DATA_STEERING_NONE            ,
 	STEERING_STATE_STRAIGHT		= APP_ESP_DATA_STEERING_STRAIGHT		,
 	STEERING_STATE_LEFT			= APP_ESP_DATA_STEERING_LEFT			,
 	STEERING_STATE_SHARP_LEFT	= APP_ESP_DATA_STEERING_SHARP_LEFT		,
@@ -118,12 +118,12 @@ typedef union
 	st_lighting_bits_t u8_lighting_bits		;
 }un_data_converter_t;
 
-
 typedef struct
 {
-	uint8_t 			item_id				;
+	uint16_t 			item_id				;
 	un_data_converter_t un_data_converter	;
-}st_uart_queue_item_t;
+}st_can_queued_item_t;
 
+typedef uint8_t app_uart_queue_item_t;
 
 #endif /* INC_APP_INTERFACE_H_ */

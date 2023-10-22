@@ -23,6 +23,9 @@ typedef unsigned char boolean;
 #define MAX_PERCENTAGE 						100UL
 
 #define SIZE_ONE_BIT 1
+
+#define ENABLED     (1)
+#define DISABLED    (0)
 /* LIGHTS MAPPED BYTES */
 
 
