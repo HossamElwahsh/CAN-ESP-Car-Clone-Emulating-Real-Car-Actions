@@ -17,9 +17,9 @@ typedef struct
 	BOOLEAN bool_reverse_lights		:	SIZE_ONE_BIT;
 	BOOLEAN bool_left_indicator		:	SIZE_ONE_BIT;
 	BOOLEAN bool_right_indicator	:	SIZE_ONE_BIT;
-	BOOLEAN bool_hazard_indicator	:	SIZE_ONE_BIT;
-	BOOLEAN bool_reserved_1			:	SIZE_ONE_BIT;
+	BOOLEAN bool_reserved_1	        :	SIZE_ONE_BIT;
 	BOOLEAN bool_reserved_2			:	SIZE_ONE_BIT;
+	BOOLEAN bool_reserved_3			:	SIZE_ONE_BIT;
 }st_lighting_state_t;
 
 typedef enum

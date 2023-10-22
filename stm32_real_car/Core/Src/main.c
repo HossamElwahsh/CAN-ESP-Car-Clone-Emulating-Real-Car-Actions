@@ -692,33 +692,8 @@ void task_process_can_data(void * pvParameters)
 						/* left indicator lights state changed - toggle last state */
 						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_left_indicator);
 
-						if(
-								(st_gs_last_data_state.st_lighting_state.bool_left_indicator &&
-                                (st_gs_last_data_state.st_lighting_state.bool_right_indicator ^ un_l_lights_conv.st_lights_bits.u32_right_indicator_bit)) &&
-									(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
-								)
-						{
-							/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
-							/* update hazard global state */
-							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
-
-
-							/* queue to ESP */
-                            u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_HAZARD, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
-                            xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
-
-						}else
-						{
-							/* turn off hazard state */
-							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
-
-							/* queue to ESP */
-                            u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_L_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_left_indicator);
-                            xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
-
-                        }
-
-                        /* queue data to be sent over UART */
+                        /* queue to ESP */
+                        u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_L_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_left_indicator);
                         xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
 					}
 					if(un_l_lights_conv.st_lights_bits.u32_right_indicator_bit)
@@ -726,32 +701,10 @@ void task_process_can_data(void * pvParameters)
 						/* brake lights state changed - toggle last state */
 						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_right_indicator);
 
-						if(
-								((st_gs_last_data_state.st_lighting_state.bool_left_indicator ^ un_l_lights_conv.st_lights_bits.u32_left_indicator_bit) &&
-									st_gs_last_data_state.st_lighting_state.bool_right_indicator) &&
-									(!st_gs_last_data_state.st_lighting_state.bool_hazard_indicator)
-								)
-						{
-							/* left & right indicators are on (== hazard) - therefore signal a hazard turn on instead */
-							/* update hazard global state */
-							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = TRUE;
-
-
-							/* queue to ESP */
-                            u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_HAZARD, st_gs_last_data_state.st_lighting_state.bool_hazard_indicator);
-                            xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
-
-						}else
-						{
-							/* turn off hazard state */
-							st_gs_last_data_state.st_lighting_state.bool_hazard_indicator = FALSE;
-
-							/* queue to ESP */
-                            u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_R_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
-                            xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
-                        }
-
-					}
+                        /* queue to ESP */
+                        u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_R_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+                        xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
+                    }
 
 				}
 				else
