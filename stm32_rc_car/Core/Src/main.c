@@ -89,13 +89,6 @@ typedef enum{
 /* SAKR END */
 
 /* NORHAN BEGIN */
-#define LEDS_BRAKING 10
-#define LEDS_FWD 15
-#define LEDS_BWD 20
-#define LED_LEFT_SIGNAL 25
-#define LED_RIGHT_SIGNAL 30
-
-
 /* NORHAN END */
 
 /* AHMED BEGIN */
@@ -151,9 +144,10 @@ osThreadId defaultTaskHandle;
 
   /* NORHAN BEGIN */
 TaskHandle_t Lights_Handle = NULL;
-TaskHandle_t Lights_Test = NULL;
+TaskHandle_t Left_LED_Blink = NULL;
+TaskHandle_t Right_LED_Blink = NULL;
 QueueHandle_t Lights_Queue;
-SemaphoreHandle_t Lights_Semaphore;
+SemaphoreHandle_t Semaphore_Lights;
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -186,7 +180,8 @@ void StartDefaultTask(void const * argument);
 
 /* NORHAN BEGIN */
 void LightingSystem(void);
-void LightingTesting(void);
+void LeftBlinking(void);
+void RightBlinking(void);
 /* NORHAN END */
 
 /* AHMED BEGIN */
@@ -325,13 +320,21 @@ int main(void)
                  ( void * ) NULL,    /* Parameter passed into the task. */
                  1,/* Priority at which the task is created. */
                  &Lights_Handle );      /* Used to pass out the created task's handle. */
+
   xTaskCreate(
-  		  	  	 LightingTesting,       /* Function that implements the task. */
-                "Testinggg",          /* Text name for the task. */
+		  	  	 LeftBlinking,       /* Function that implements the task. */
+                "leftBlinking",          /* Text name for the task. */
                  128,      /* Stack size in words, not bytes. */
                  ( void * ) NULL,    /* Parameter passed into the task. */
                  1,/* Priority at which the task is created. */
-                 &Lights_Test );      /* Used to pass out the created task's handle. */
+                 &Left_LED_Blink );      /* Used to pass out the created task's handle. */
+  xTaskCreate(
+		  	  	 RightBlinking,       /* Function that implements the task. */
+                "rightBlinking",          /* Text name for the task. */
+                 128,      /* Stack size in words, not bytes. */
+                 ( void * ) NULL,    /* Parameter passed into the task. */
+                 1,/* Priority at which the task is created. */
+                 &Right_LED_Blink );      /* Used to pass out the created task's handle. */
 
   /* NORHAN END */
 
@@ -384,7 +387,7 @@ int main(void)
   /* SAKR END */
 
   /* NORHAN BEGIN */
-  Lights_Semaphore = xSemaphoreCreateBinary();
+  Semaphore_Lights = xSemaphoreCreateBinary();
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -431,7 +434,7 @@ int main(void)
   /* SAKR END */
 
   /* NORHAN BEGIN */
-  Lights_Queue = xQueueCreate( 10, sizeof( uint8_t ));
+  Lights_Queue = xQueueCreate( 15, sizeof( uint8_t ));
   /* NORHAN END */
 
   /* AHMED BEGIN */
@@ -504,6 +507,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
   }
 
+}
+
   /* NADA BEGIN */
   /* NADA END */
 
@@ -513,32 +518,69 @@ int main(void)
   /* NORHAN BEGIN */
   void LightingSystem(void){
 	  uint8_t messagesWaiting =0;
-	  uint8_t ledtopoweron =0;
-	  xSemaphoreTake(Lights_Semaphore, portMAX_DELAY);
+	  uint8_t LedToPowerOn =0;
+	  xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
 	  for(;;){
-		  xSemaphoreTake(Lights_Semaphore, portMAX_DELAY);
+
+		  xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
 		  messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
 		  while (messagesWaiting != 0 ){
-			  xQueueReceive( Lights_Queue, &ledtopoweron ,portMAX_DELAY);
-			  if (ledtopoweron == LEDS_BRAKING)
+			  xQueueReceive( Lights_Queue, &LedToPowerOn ,portMAX_DELAY);
+			  if (LedToPowerOn == brake_lights_off)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin, GPIO_PIN_SET);
+				  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin, GPIO_PIN_RESET);
 			  }
-			  else if (ledtopoweron == LEDS_FWD)
+			  else if (LedToPowerOn == brake_lights_on)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_REVERSE_Pin, GPIO_PIN_SET);
+			  	  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin, GPIO_PIN_SET);
 			  }
-			  else if (ledtopoweron == LEDS_BWD)
+			  else if (LedToPowerOn == front_lights_off)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_FRONT_Pin, GPIO_PIN_SET);
+				  HAL_GPIO_WritePin(GPIOB, LED_FRONT_Pin, GPIO_PIN_RESET);
 			  }
-			  else if (ledtopoweron == LED_LEFT_SIGNAL)
+			  else if (LedToPowerOn == front_lights_on)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_RIGHT_Pin, GPIO_PIN_SET);
+			  	  HAL_GPIO_WritePin(GPIOB, LED_FRONT_Pin, GPIO_PIN_SET);
 			  }
-			  else if (ledtopoweron== LED_RIGHT_SIGNAL)
+			  else if (LedToPowerOn == reverse_lights_off)
 			  {
-				  HAL_GPIO_WritePin(GPIOB, LED_BRAKES_Pin|LED_REVERSE_Pin|LED_FRONT_Pin|LED_RIGHT_Pin, GPIO_PIN_SET);
+				  HAL_GPIO_WritePin(GPIOB, LED_REVERSE_Pin, GPIO_PIN_RESET);
+			  }
+			  else if (LedToPowerOn == reverse_lights_on)
+			  {
+			  	  HAL_GPIO_WritePin(GPIOB, LED_REVERSE_Pin, GPIO_PIN_SET);
+			  }
+			  else if (LedToPowerOn == left_indicators_off)
+			  {
+				  vTaskSuspend(Left_LED_Blink);
+
+			  }
+			  else if (LedToPowerOn == left_indicators_on)
+			  {
+				  vTaskResume(Left_LED_Blink);
+
+			  }
+			  else if (LedToPowerOn == right_indicators_off)
+			  {
+				  vTaskSuspend(Right_LED_Blink);
+
+			  }
+			  else if (LedToPowerOn == right_indicators_on)
+			  {
+				  vTaskResume(Right_LED_Blink);
+
+			  }
+			  else if (LedToPowerOn == hazard_indicators_off)
+			  {
+				  vTaskSuspend(Left_LED_Blink);
+				  vTaskSuspend(Right_LED_Blink);
+
+			  }
+			  else if (LedToPowerOn == hazard_indicators_on)
+			  {
+				  vTaskResume(Left_LED_Blink);
+				  vTaskResume(Right_LED_Blink);
+
 			  }
 
 
@@ -551,23 +593,28 @@ int main(void)
 
   }
 
-  void LightingTesting(void){
-	  uint8_t buttonsclicked =0;
-	  for(;;)
-	  {
-		  if (HAL_GPIO_ReadPin(GPIOB , GPIO_PIN_11)==0)
-		  {
-			  buttonsclicked = 10;
-			  xQueueSend( Lights_Queue, &buttonsclicked ,portMAX_DELAY);
-		  }
-		  else if (HAL_GPIO_ReadPin(GPIOB , GPIO_PIN_10)==0)
-		  {
-			  buttonsclicked = 15;
-			  xQueueSend( Lights_Queue, &buttonsclicked ,portMAX_DELAY);
-		  }
+  void LeftBlinking(void){
+	  vTaskSuspend(Left_LED_Blink);
+
+	  for(;;){
+
+		  HAL_GPIO_TogglePin(GPIOA, LED_LEFT_Pin);
+		  osDelay(500);
 	  }
 
   }
+
+  void RightBlinking(void){
+	  vTaskSuspend(Right_LED_Blink);
+	  for(;;){
+
+		  HAL_GPIO_TogglePin(GPIOB, LED_RIGHT_Pin);
+		  osDelay(500);
+	  }
+
+  }
+
+
 
 
   /* NORHAN END */
@@ -582,7 +629,7 @@ int main(void)
   /* SALMA END */
 
   /* USER CODE END 3 */
-}
+
 
 /**
   * @brief System Clock Configuration
