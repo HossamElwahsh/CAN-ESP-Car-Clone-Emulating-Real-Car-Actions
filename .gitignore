@@ -9,3 +9,5 @@ stm32_rc_car/CAN_ESP_Car_Clone Debug.launch
 stm32_real_car/cmake-build-debug/
 
 stm32_real_car/.idea/
+
+stm32_real_car/.cproject

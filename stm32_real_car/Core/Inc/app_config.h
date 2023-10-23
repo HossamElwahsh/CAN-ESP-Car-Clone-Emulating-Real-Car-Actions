@@ -10,9 +10,27 @@
 
 #include "std.h"
 
+/* DEBUG LEDS */
+#define UART_TX_LED_ARGS    GPIOC, GPIO_PIN_13
+#define CAN_RX_LED_ARGS     GPIOA, GPIO_PIN_2
+
 /* CAN CONFIG */
 #define APP_TX_DATA_LENGTH	8
 #define APP_RX_DATA_LENGTH 	8
+
+/* - CAN FILTERS */
+#define CAN_FILTER_ON
+#ifdef CAN_FILTER_ON
+#define CAN_FILTER_ID_HIGH          (0x1F0 << 5)
+#define CAN_FILTER_ID_LOW           (0x73E << 5)
+#define CAN_FILTER_MASK_ID_HIGH     (0x2EF << 5)
+#define CAN_FILTER_MASK_ID_LOW      (0x0DE << 5)
+#else
+#define CAN_FILTER_ID_HIGH              0
+#define CAN_FILTER_ID_LOW           0
+#define CAN_FILTER_MASK_ID_HIGH     0
+#define CAN_FILTER_MASK_ID_LOW      0
+#endif
 
 /* CAR CAN MSG IDS */
 #define APP_CAN_ID_THROTTLE 		0x1F0

@@ -43,7 +43,7 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
 
-UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart3;
 
 osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
@@ -65,7 +65,7 @@ static st_last_data_state_t st_gs_last_data_state;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
-static void MX_USART1_UART_Init(void);
+static void MX_USART3_UART_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -91,7 +91,8 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 	/* store can id for further processing */
 	st_can_queued_item.item_id = RxHeader.StdId;
 
-
+    /* Toggle CAN RX LED */
+    HAL_GPIO_TogglePin(CAN_RX_LED_ARGS);
 
     /* Queue can data for processing */
     xQueueSendToBackFromISR(canProcessQueue, &st_can_queued_item, &xHigherPriorityTaskWoken);
@@ -363,7 +364,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
-  MX_USART1_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
 //  uint8_t * namePtr = NULL;
@@ -500,11 +501,12 @@ static void MX_CAN_Init(void)
   /* Configure CAN Receiving Filter */
     /* set FIFO assignment */
     FilterConfig.FilterFIFOAssignment = CAN_FILTER_FIFO0;
+    FilterConfig.FilterMode           = CAN_FILTERMODE_IDLIST;
     /* 0x245<<5; the ID that the filter looks for: Zero to pass all IDs */
-    FilterConfig.FilterIdHigh = 0;
-    FilterConfig.FilterIdLow = 0;
-    FilterConfig.FilterMaskIdHigh = 0;
-    FilterConfig.FilterMaskIdLow = 0;
+    FilterConfig.FilterIdHigh       =   CAN_FILTER_ID_HIGH      ;
+    FilterConfig.FilterIdLow        =   CAN_FILTER_ID_LOW       ;
+    FilterConfig.FilterMaskIdHigh   =   CAN_FILTER_MASK_ID_HIGH ;
+    FilterConfig.FilterMaskIdLow    =   CAN_FILTER_MASK_ID_LOW  ;
 
     /* Set Filter Scale */
     FilterConfig.FilterScale = CAN_FILTERSCALE_16BIT; //set filter scale
@@ -527,35 +529,35 @@ static void MX_CAN_Init(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
+  * @brief USART3 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_USART1_UART_Init(void)
+static void MX_USART3_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART1_Init 0 */
+  /* USER CODE BEGIN USART3_Init 0 */
 
-  /* USER CODE END USART1_Init 0 */
+  /* USER CODE END USART3_Init 0 */
 
-  /* USER CODE BEGIN USART1_Init 1 */
+  /* USER CODE BEGIN USART3_Init 1 */
 
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN USART1_Init 2 */
+  /* USER CODE BEGIN USART3_Init 2 */
 
-  /* USER CODE END USART1_Init 2 */
+  /* USER CODE END USART3_Init 2 */
 
 }
 
@@ -569,11 +571,23 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PC13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA2 */
   GPIO_InitStruct.Pin = GPIO_PIN_2;
@@ -590,13 +604,25 @@ void task_uart_tx_data(void * pvParameters)
 {
     app_uart_queue_item_t app_uart_queue_item;
 
+    HAL_StatusTypeDef uartTxStatus = HAL_OK;
+
     /* Task main loop */
     for(;;)
     {
         xQueueReceive(uartTransmitQueue, &app_uart_queue_item, portMAX_DELAY);
 
         /* transmit over uart */
-        HAL_UART_Transmit(&huart1, &app_uart_queue_item, 1, 500);
+        uartTxStatus = HAL_UART_Transmit(&huart3, &app_uart_queue_item, 1, 500);
+
+        if(HAL_OK == uartTxStatus)
+        {
+            /* Toggle UART TX LED */
+            HAL_GPIO_TogglePin(UART_TX_LED_ARGS);
+        }
+        else
+        {
+            /* Do Nothing */
+        }
     }
 }
 
