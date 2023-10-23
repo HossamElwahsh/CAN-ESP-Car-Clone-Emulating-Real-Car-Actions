@@ -26,6 +26,7 @@
 /* USER CODE BEGIN Includes */
 
 /* NADA BEGIN */
+#include "Ultrasonic_Task.h"
 /* NADA END */
 
 /* SAKR BEGIN */
@@ -54,7 +55,11 @@
 /* USER CODE BEGIN PTD */
 
 /* NADA BEGIN */
+TaskHandle_t Ultra_Handel = NULL;
+TaskHandle_t Ultratest_Handel = NULL;
+SemaphoreHandle_t Semaphore_Ultrasonic;
 /* NADA END */
+
 /*NORHAN BEGIN*/
 QueueHandle_t Lights_Queue;
 
@@ -572,6 +577,25 @@ int main(void) {
     /* USER CODE BEGIN 2 */
 
     /* NADA BEGIN */
+  xTaskCreate(
+		       Ultrasonic_Task,       /* Function that implements the task. */
+                "Ultrasonic",          /* Text name for the task. */
+                 128,      /* Stack size in words, not bytes. */
+                 ( void * ) NULL,    /* Parameter passed into the task. */
+                 1,/* Priority at which the task is created. */
+                 &Ultra_Handel);      /* Used to pass out the created task's handle. */
+
+  xTaskCreate(
+		     Ultrasonictest_Task,       /* Function that implements the task. */
+                 "Ultrasonic_test",          /* Text name for the task. */
+                  128,      /* Stack size in words, not bytes. */
+                  ( void * ) NULL,    /* Parameter passed into the task. */
+                  1,/* Priority at which the task is created. */
+                  &Ultratest_Handel);      /* Used to pass out the created task's handle. */
+
+
+  
+ 
     /* NADA END */
 
     /* SAKR BEGIN */
@@ -639,6 +663,7 @@ int main(void) {
 
 
     /* NADA BEGIN */
+ Semaphore_Ultrasonic = xSemaphoreCreateBinary();
     /* NADA END */
 
     /* SAKR BEGIN */
@@ -663,6 +688,8 @@ int main(void) {
     /* start timers, add new ones, ... */
 
     /* NADA BEGIN */
+  HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_1);
+  HAL_TIM_IC_Start_IT(&htim1,TIM_CHANNEL_4);
     /* NADA END */
 
     /* SAKR BEGIN */
