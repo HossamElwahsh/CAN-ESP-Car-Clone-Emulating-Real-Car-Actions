@@ -29,7 +29,7 @@
 /* NADA END */
 
 /* SAKR BEGIN */
-#include "Enums_isr.h"
+#include "app_interface.h"
 /* SAKR END */
 
 /* NORHAN BEGIN */
@@ -119,9 +119,7 @@ throttle_en gl_throttle_en = throttle_0_percent;
 uint8_t Throttle_readings_gl; /*readings of the throttle to be simulated*/
 
 /*creating a semaphore handle*/
-UART_HandleTypeDef huart1;
 
-osThreadId defaultTaskHandle;
 SemaphoreHandle_t semaphore_transmissionHandle;
 SemaphoreHandle_t semaphore_OLEDHandle;
 SemaphoreHandle_t semaphore_steeringHandle;
@@ -171,9 +169,9 @@ I2C_HandleTypeDef hi2c1;
 TIM_HandleTypeDef htim1;
 TIM_HandleTypeDef htim3;
 
-UART_HandleTypeDef huart1;
+UART_HandleTypeDef huart3;
+DMA_HandleTypeDef hdma_usart3_rx;
 
-osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
 /* NADA BEGIN */
@@ -392,10 +390,11 @@ LED_STATUS Right_led_flag = OFF;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_I2C1_Init(void);
-static void MX_USART1_UART_Init(void);
 static void MX_TIM1_Init(void);
+static void MX_USART3_UART_Init(void);
 void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
@@ -428,6 +427,7 @@ void OLED_Function(void * pvParameters);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
 /* NADA BEGIN */
 /* NADA END */
 
@@ -435,6 +435,77 @@ void OLED_Function(void * pvParameters);
 /* SAKR END */
 
 /* NORHAN BEGIN */
+void LightingSystem(void * pvParameter) {
+    lights_en LedToPowerOn;
+    uint8_t messagesWaiting = 0;
+    xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
+    for (;;) {
+        xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
+        messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
+        while (messagesWaiting != 0) {
+            xQueueReceive(Lights_Queue, &LedToPowerOn, portMAX_DELAY);
+            if (LedToPowerOn == brake_lights_off) {
+                HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_RESET);
+            } else if (LedToPowerOn == brake_lights_on) {
+                HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_SET);
+            } else if (LedToPowerOn == front_lights_off) {
+                HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_RESET);
+            } else if (LedToPowerOn == front_lights_on) {
+                HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_SET);
+            } else if (LedToPowerOn == reverse_lights_off) {
+                HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_RESET);
+            } else if (LedToPowerOn == reverse_lights_on) {
+                HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_SET);
+            } else if (LedToPowerOn == left_indicators_off) {
+                Left_led_flag = OFF;
+                vTaskSuspend(LED_Blink_Handle);
+            } else if (LedToPowerOn == left_indicators_on) {
+                Left_led_flag = ON;
+                vTaskResume(LED_Blink_Handle);
+            } else if (LedToPowerOn == right_indicators_off) {
+                Right_led_flag = OFF;
+                vTaskSuspend(LED_Blink_Handle);
+            } else if (LedToPowerOn == right_indicators_on) {
+                Right_led_flag = ON;
+                vTaskResume(LED_Blink_Handle);
+            }
+
+            messagesWaiting--;
+
+
+        }
+    }
+
+
+}
+
+void Blinking(void * pvParameter)
+{
+    vTaskSuspend(LED_Blink_Handle);
+
+    for (;;) {
+        if (Right_led_flag == ON) {
+            HAL_GPIO_TogglePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin);
+        } else if (Right_led_flag == OFF) {
+            HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, GPIO_PIN_RESET);
+        }
+
+
+        if (Left_led_flag == ON) {
+            HAL_GPIO_TogglePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin);
+        } else if (Left_led_flag == OFF) {
+            HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, GPIO_PIN_RESET);
+        }
+
+
+        osDelay(500);
+    }
+
+}
+
+
+
+
 /* NORHAN END */
 
 /* AHMED BEGIN */
@@ -538,10 +609,11 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_TIM3_Init();
   MX_I2C1_Init();
-  MX_USART1_UART_Init();
   MX_TIM1_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
     /* NADA BEGIN */
@@ -562,8 +634,8 @@ int main(void)
                   &Ultratest_Handel);      /* Used to pass out the created task's handle. */
 
 
-  
- 
+
+
     /* NADA END */
 
     /* SAKR BEGIN */
@@ -758,100 +830,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     }
-
-}
-
-/* NADA BEGIN */
-/* NADA END */
-
-/* SAKR BEGIN */
-/* SAKR END */
-
-/* NORHAN BEGIN */
-void LightingSystem(void * pvParameter) {
-    lights_en LedToPowerOn;
-    uint8_t messagesWaiting = 0;
-    xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
-    for (;;) {
-        xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
-        messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
-        while (messagesWaiting != 0) {
-            xQueueReceive(Lights_Queue, &LedToPowerOn, portMAX_DELAY);
-            if (LedToPowerOn == brake_lights_off) {
-                HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_RESET);
-            } else if (LedToPowerOn == brake_lights_on) {
-                HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_SET);
-            } else if (LedToPowerOn == front_lights_off) {
-                HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_RESET);
-            } else if (LedToPowerOn == front_lights_on) {
-                HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_SET);
-            } else if (LedToPowerOn == reverse_lights_off) {
-                HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_RESET);
-            } else if (LedToPowerOn == reverse_lights_on) {
-                HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_SET);
-            } else if (LedToPowerOn == left_indicators_off) {
-                Left_led_flag = OFF;
-                vTaskSuspend(LED_Blink_Handle);
-            } else if (LedToPowerOn == left_indicators_on) {
-                Left_led_flag = ON;
-                vTaskResume(LED_Blink_Handle);
-            } else if (LedToPowerOn == right_indicators_off) {
-                Right_led_flag = OFF;
-                vTaskSuspend(LED_Blink_Handle);
-            } else if (LedToPowerOn == right_indicators_on) {
-                Right_led_flag = ON;
-                vTaskResume(LED_Blink_Handle);
-            }
-
-            messagesWaiting--;
-
-
-        }
-    }
-
-
-}
-
-void Blinking(void * pvParameter)
-{
-    vTaskSuspend(LED_Blink_Handle);
-
-    for (;;) {
-        if (Right_led_flag == ON) {
-            HAL_GPIO_TogglePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin);
-        } else if (Right_led_flag == OFF) {
-            HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, GPIO_PIN_RESET);
-        }
-
-
-        if (Left_led_flag == ON) {
-            HAL_GPIO_TogglePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin);
-        } else if (Left_led_flag == OFF) {
-            HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, GPIO_PIN_RESET);
-        }
-
-
-        osDelay(500);
-    }
-
-}
-
-
-
-
-/* NORHAN END */
-
-/* AHMED BEGIN */
-/* AHMED END */
-
-/* HOSSAM BEGIN */
-/* HOSSAM END */
-
-/* SALMA BEGIN */
-/* SALMA END */
-
   /* USER CODE END 3 */
-
+}
 
 /**
   * @brief System Clock Configuration
@@ -1051,37 +1031,51 @@ static void MX_TIM3_Init(void)
 }
 
 /**
-  * @brief USART1 Initialization Function
+  * @brief USART3 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_USART1_UART_Init(void)
+static void MX_USART3_UART_Init(void)
 {
 
-  /* USER CODE BEGIN USART1_Init 0 */
+  /* USER CODE BEGIN USART3_Init 0 */
 
-  /* USER CODE END USART1_Init 0 */
+  /* USER CODE END USART3_Init 0 */
 
-  /* USER CODE BEGIN USART1_Init 1 */
+  /* USER CODE BEGIN USART3_Init 1 */
 
-  /* USER CODE END USART1_Init 1 */
-  huart1.Instance = USART1;
-  huart1.Init.BaudRate = 115200;
-  huart1.Init.WordLength = UART_WORDLENGTH_8B;
-  huart1.Init.StopBits = UART_STOPBITS_1;
-  huart1.Init.Parity = UART_PARITY_NONE;
-  huart1.Init.Mode = UART_MODE_TX_RX;
-  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart1) != HAL_OK)
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN USART1_Init 2 */
+  /* USER CODE BEGIN USART3_Init 2 */
 
-  //HAL_UART_
+  /* USER CODE END USART3_Init 2 */
 
-  /* USER CODE END USART1_Init 2 */
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }
 
@@ -1095,17 +1089,28 @@ static void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, MOTOR_EN_A_RIGHT_Pin|MOTOR_IN_1_RIGHT_Pin|MOTOR_IN_2_RIGHT_Pin|MOTOR_IN_3_LEFT_Pin
                           |MOTOR_IN_4_LEFT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, US_TRIGGER_1_Drive_Pin|US_TRIGGER_2_BACK_Pin|LED_LEFT_Pin|LED_BRAKES_Pin
-                          |LED_REVERSE_Pin|LED_FRONT_Pin|LED_RIGHT_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, US_TRIGGER_1_Drive_Pin|US_TRIGGER_2_BACK_Pin|LED_REVERSE_Pin|LED_FRONT_Pin
+                          |LED_RIGHT_Pin|LED_LEFT_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : LED_BRAKES_Pin */
+  GPIO_InitStruct.Pin = LED_BRAKES_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(LED_BRAKES_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : MOTOR_EN_A_RIGHT_Pin MOTOR_IN_1_RIGHT_Pin MOTOR_IN_2_RIGHT_Pin MOTOR_IN_3_LEFT_Pin
                            MOTOR_IN_4_LEFT_Pin */
@@ -1116,10 +1121,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : US_TRIGGER_1_Drive_Pin US_TRIGGER_2_BACK_Pin LED_LEFT_Pin LED_BRAKES_Pin
-                           LED_REVERSE_Pin LED_FRONT_Pin LED_RIGHT_Pin */
-  GPIO_InitStruct.Pin = US_TRIGGER_1_Drive_Pin|US_TRIGGER_2_BACK_Pin|LED_LEFT_Pin|LED_BRAKES_Pin
-                          |LED_REVERSE_Pin|LED_FRONT_Pin|LED_RIGHT_Pin;
+  /*Configure GPIO pins : US_TRIGGER_1_Drive_Pin US_TRIGGER_2_BACK_Pin LED_REVERSE_Pin LED_FRONT_Pin
+                           LED_RIGHT_Pin LED_LEFT_Pin */
+  GPIO_InitStruct.Pin = US_TRIGGER_1_Drive_Pin|US_TRIGGER_2_BACK_Pin|LED_REVERSE_Pin|LED_FRONT_Pin
+                          |LED_RIGHT_Pin|LED_LEFT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1130,13 +1135,11 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 
-/* USER CODE BEGIN Header_OLED_Function */
 /**
   * @brief  Function implementing the oled thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_OLED_Function */
 void OLED_Function(void * pvParameters) {
     /* USER CODE BEGIN 5 */
     /* Infinite loop */
@@ -1168,44 +1171,6 @@ void OLED_Function(void * pvParameters) {
 }
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-  /* USER CODE BEGIN 5 */
-    /* Infinite loop */
-    xSemaphoreTake(semaphore_transmissionHandle, portMAX_DELAY);
-    for (;;) {
-        xSemaphoreTake(semaphore_transmissionHandle, portMAX_DELAY);
-        SSD1306_Clear();
-        SSD1306_GotoXY(10, 10); // goto 10, 10
-        SSD1306_Puts("Current mode:", &Font_7x10, 1); // print Hello
-
-        if (gl_transmission_en == Neutral) {
-            SSD1306_GotoXY(40, 30);
-            SSD1306_Puts("N", &Font_11x18, 1);
-        } else if (gl_transmission_en == Parking) {
-            SSD1306_GotoXY(55, 30);
-            SSD1306_Puts("P", &Font_11x18, 1);
-        } else if (gl_transmission_en == Drive) {
-            SSD1306_GotoXY(10, 30);
-            SSD1306_Puts("D", &Font_11x18, 1);
-        } else if (gl_transmission_en == Reverse) {
-            SSD1306_GotoXY(25, 30);
-            SSD1306_Puts("R", &Font_11x18, 1);
-        } else {
-            /*		DO NOTHING		*/
-        }
-        SSD1306_UpdateScreen(); // update screen
-    }
-  /* USER CODE END 5 */
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

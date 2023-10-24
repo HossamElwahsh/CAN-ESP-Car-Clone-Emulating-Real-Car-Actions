@@ -11,7 +11,7 @@
 #include "stm32f1xx_hal.h"
 #include "DCM_interface.h"
 #include "cmsis_os.h"
-#include "Enums_isr.h"
+#include "app_interface.h"
 
 
 /* Gear Positions */
@@ -42,7 +42,7 @@
 /* External Variables*/
 extern Steering_en gl_steering_en;
 extern throttle_en gl_throttle_en;
-extern throttle_en gl_transmission_en;
+extern transmission_en gl_transmission_en;
 extern TIM_HandleTypeDef htim3;
 extern TaskHandle_t TH_DCM;
 extern SemaphoreHandle_t semaphore_transmissionHandle;

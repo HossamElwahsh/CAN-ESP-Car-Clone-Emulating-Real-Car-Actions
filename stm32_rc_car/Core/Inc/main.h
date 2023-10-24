@@ -150,6 +150,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define LED_BRAKES_Pin GPIO_PIN_14
+#define LED_BRAKES_GPIO_Port GPIOC
 #define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_1
 #define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_1_RIGHT_Pin GPIO_PIN_2
@@ -166,16 +168,14 @@ void Error_Handler(void);
 #define US_TRIGGER_1_Drive_GPIO_Port GPIOB
 #define US_TRIGGER_2_BACK_Pin GPIO_PIN_1
 #define US_TRIGGER_2_BACK_GPIO_Port GPIOB
-#define LED_LEFT_Pin GPIO_PIN_11
-#define LED_LEFT_GPIO_Port GPIOB
-#define LED_BRAKES_Pin GPIO_PIN_12
-#define LED_BRAKES_GPIO_Port GPIOB
 #define LED_REVERSE_Pin GPIO_PIN_13
 #define LED_REVERSE_GPIO_Port GPIOB
 #define LED_FRONT_Pin GPIO_PIN_14
 #define LED_FRONT_GPIO_Port GPIOB
 #define LED_RIGHT_Pin GPIO_PIN_15
 #define LED_RIGHT_GPIO_Port GPIOB
+#define LED_LEFT_Pin GPIO_PIN_9
+#define LED_LEFT_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* NADA BEGIN */

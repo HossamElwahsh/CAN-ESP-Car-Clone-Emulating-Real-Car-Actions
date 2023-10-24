@@ -5,9 +5,16 @@
  *      Author: A M
  */
 
-#ifndef INC_ENUMS_ISR_H_
-#define INC_ENUMS_ISR_H_
+#ifndef INC_APP_INTERFACE_H_
+#define INC_APP_INTERFACE_H_
 
+
+typedef enum {
+    Neutral = 0X70,
+    Reverse = 0X77,
+    Drive = 0x71,
+    Parking = 0x7F
+} transmission_en;
 
 typedef enum {
     Straight = 0xE0,
@@ -43,4 +50,4 @@ typedef enum {
 
 
 
-#endif /* INC_ENUMS_ISR_H_ */
+#endif /* INC_APP_INTERFACE_H_ */
