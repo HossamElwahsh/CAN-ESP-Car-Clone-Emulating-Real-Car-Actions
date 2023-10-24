@@ -11,8 +11,8 @@
 #include "stm32f1xx_hal.h"
 #include "DCM_interface.h"
 #include "cmsis_os.h"
+#include "app_config.h"
 #include "app_interface.h"
-
 
 /* Gear Positions */
 # define GEAR_NEUTRAL ((uint8_t)112)
@@ -27,21 +27,12 @@
 # define STEERING_LEFT 		  ((uint8_t)232)
 # define STEERING_SHARP_LEFT  ((uint8_t)236)
 
-/* Speed Levels */
-# define SPEED_ZERO  	((uint8_t)0)
-# define SPEED_MIN  	((uint8_t)70)
-# define SPEED_MED 	    ((uint8_t)80)
-# define SPEED_HIGH 	((uint8_t)90)
-# define SPEED_MAX      ((uint8_t)100)
-
-
-
 #define GEAR_SEMAPHORE			(semaphore_transmissionHandle)
 #define STEERING_SEMAPHORE      (semaphore_steeringHandle)
 
 /* External Variables*/
 extern Steering_en gl_steering_en;
-extern throttle_en gl_throttle_en;
+extern uint8_t gl_u8_throttle;
 extern transmission_en gl_transmission_en;
 extern TIM_HandleTypeDef htim3;
 extern TaskHandle_t TH_DCM;
@@ -49,7 +40,7 @@ extern SemaphoreHandle_t semaphore_transmissionHandle;
 extern SemaphoreHandle_t semaphore_steeringHandle;
 
 /* Global Variables Defines */
-#define THROTTLE_POSITION 		(gl_throttle_en)
+#define THROTTLE_POSITION 		(gl_u8_throttle)
 #define STEERING_WHEEL_POSITION (gl_steering_en)
 #define GEAR_POSITION 			(gl_transmission_en)
 

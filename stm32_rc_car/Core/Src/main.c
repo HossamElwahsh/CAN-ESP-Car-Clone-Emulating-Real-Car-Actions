@@ -30,6 +30,7 @@
 
 /* SAKR BEGIN */
 #include "app_interface.h"
+#include "app_config.h"
 /* SAKR END */
 
 /* NORHAN BEGIN */
@@ -53,7 +54,7 @@
 /* USER CODE BEGIN PTD */
 
 /* NADA BEGIN */
-TaskHandle_t Ultra_Handel = NULL;
+TaskHandle_t Ultra_Handle = NULL;
 TaskHandle_t Ultratest_Handel = NULL;
 SemaphoreHandle_t Semaphore_Ultrasonic;
 /* NADA END */
@@ -69,6 +70,7 @@ SemaphoreHandle_t Semaphore_Lights;
 
 /*NOURHAN END*/
 /*AHMED BEGIN*/
+QueueHandle_t UartRxQueue;
 /*AHMED END*/
 
 /* SAKR BEGIN */
@@ -101,7 +103,6 @@ extern ULTRASONIC_PASS Pass_Signal;
 
 /* SAKR BEGIN */
 
-uint8_t throttle_counter = 0;
 //uint8_t Rx_data[8];
 BaseType_t QueueResult = pdFALSE;
 BaseType_t semaphoreResult = pdFALSE;
@@ -111,9 +112,8 @@ BaseType_t semaphoreResult = pdFALSE;
 lights_en gl_lights_en = front_lights_on;
 transmission_en  gl_transmission_en = Parking;
 Steering_en gl_steering_en = Straight;
-throttle_en gl_throttle_en = throttle_0_percent;
-
-uint8_t Throttle_readings_gl; /*readings of the throttle to be simulated*/
+/* todo should be int @sakr */
+uint8_t gl_u8_throttle = SPEED_ZERO;
 
 /*creating a semaphore handle*/
 
@@ -175,186 +175,252 @@ DMA_HandleTypeDef hdma_usart3_rx;
 /* NADA END */
 
 /* SAKR BEGIN */
+uint8_t uartDMARxBuffer[APP_UART_DMA_RX_BUFFER_LENGTH];
 
+void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
+{
+    BaseType_t pxHigherPriorityTaskWoken;
 
+    /* received 1 byte */
+    xQueueSendFromISR(UartRxQueue, &uartDMARxBuffer[0], &pxHigherPriorityTaskWoken);
+}
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+    BaseType_t pxHigherPriorityTaskWoken;
 
-//HAL_UART_Receive(&huart1, Rx_data, 2, 100);
-    
-	volatile uint8_t * Rx_data = huart->pRxBuffPtr;
+    /* Received 2 bytes - copy second byte */
+    xQueueSendFromISR(UartRxQueue, &uartDMARxBuffer[1], &pxHigherPriorityTaskWoken);
+}
 
-    switch ((transmission_en)Rx_data[0])
+
+void task_uart_processing(void * pvParameters)
+{
+    uint8_t rxData = 0;
+
+    for(;;)
     {
-        case Parking:
-        {
-            gl_transmission_en = Parking;/*updating car transmission state*/
-            /*throttle equals zero.*/
-            Throttle_readings_gl = 0;
-            xSemaphoreGiveFromISR(semaphore_transmissionHandle, &semaphoreResult);
-            xSemaphoreGiveFromISR(semaphore_OLEDHandle, &semaphoreResult);
-            break;
-        }
-        case Neutral:
-        {
-            gl_transmission_en = Neutral;/*updating car transmission state*/
-            /*car is in neutral mode..the gears are all up*/
-            /*throttle equals zero.*/
-            Throttle_readings_gl = 0;
-            xSemaphoreGiveFromISR(semaphore_transmissionHandle, &semaphoreResult);
-            xSemaphoreGiveFromISR(semaphore_OLEDHandle, &semaphoreResult);
+        xQueueReceive(UartRxQueue, &rxData, portMAX_DELAY);
 
-            break;
-        }
-        case Drive:
-            if (Pass_Signal == Green_Flag) {
-                gl_transmission_en = Drive; /*updating car transmission state for later check*/
-                xSemaphoreGiveFromISR(semaphore_transmissionHandle, &semaphoreResult);
-                xSemaphoreGiveFromISR(semaphore_OLEDHandle, &semaphoreResult);
-                xSemaphoreGiveFromISR(Semaphore_Ultrasonic, &semaphoreResult); /*for the ultrasonic sensor...*/
-                //}
+        switch (rxData)
+        {
+            case Parking:
+            {
+                gl_transmission_en = Parking;/*updating car transmission state*/
+                /*throttle equals zero.*/
+                gl_u8_throttle = SPEED_ZERO;
+                xSemaphoreGive(semaphore_transmissionHandle);
+                xSemaphoreGive(semaphore_OLEDHandle);
                 break;
-
-                case Reverse:
-                    if (Pass_Signal == Green_Flag) {
-                        gl_transmission_en = Reverse;/*updating car transmission state  for later check */
-                        xSemaphoreGiveFromISR(semaphore_transmissionHandle, &semaphoreResult);
-                        xSemaphoreGiveFromISR(semaphore_OLEDHandle, &semaphoreResult);
-                        xSemaphoreGiveFromISR(Semaphore_Ultrasonic, &semaphoreResult); /*for the ultrasonic sensor...*/
-                    }
-                break;
-                default:
-                    break;
             }
+            case Neutral:
+            {
+                gl_transmission_en = Neutral;/*updating car transmission state*/
+                /*car is in neutral mode..the gears are all up*/
+                /*throttle equals zero.*/
+                gl_u8_throttle = SPEED_ZERO;
+                xSemaphoreGive(semaphore_transmissionHandle);
+                xSemaphoreGive(semaphore_OLEDHandle);
 
-            if (gl_transmission_en == Reverse || gl_transmission_en == Drive) {
-                switch (Rx_data[0]) {
-                    case throttle_0_percent:
-                        gl_throttle_en = 0;
-                        break;
-                    case throttle_70_percent:
-                        gl_throttle_en = 70;
-                        break;
-                    case throttle_80_percent:
-                        gl_throttle_en = 80;
-                        break;
-                    case throttle_90_percent:
-                        gl_throttle_en = 90;
-                        break;
-                    case throttle_100_percent:
-                        gl_throttle_en = 100;
-                        break;
-                    default:
-                        break;
+                break;
+            }
+            case Drive:
+            {
+                if (Pass_Signal == Green_Flag)
+                {
+                    gl_transmission_en = Drive; /*updating car transmission state for later check*/
+                    xSemaphoreGive(semaphore_transmissionHandle);
+                    xSemaphoreGive(semaphore_OLEDHandle);
+                    xSemaphoreGive(Semaphore_Ultrasonic); /*for the ultrasonic sensor...*/
                 }
+                else
+                {
+                    /* Do Nothing */
+                }
+                break;
             }
+            case Reverse:
+            {
+                if (Pass_Signal == Green_Flag)
+                {
+                    gl_transmission_en = Reverse; /*updating car transmission state  for later check */
+                    xSemaphoreGive(semaphore_transmissionHandle);
+                    xSemaphoreGive(semaphore_OLEDHandle);
+                    xSemaphoreGive(Semaphore_Ultrasonic); /*for the ultrasonic sensor...*/
+                }
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
 
-
-            switch (Rx_data[0]) {
-                case Straight:
-                    gl_steering_en = Straight;
-                    xSemaphoreGiveFromISR(semaphore_steeringHandle, &semaphoreResult);
+        /* Throttle Readings */
+        if (gl_transmission_en == Reverse || gl_transmission_en == Drive)
+        {
+            switch (rxData)
+            {
+                case throttle_0_percent:
+                    gl_u8_throttle = SPEED_ZERO;
                     break;
-                case right :
-                    gl_steering_en = right;
-                    xSemaphoreGiveFromISR(semaphore_steeringHandle, &semaphoreResult);
+                case throttle_70_percent:
+                    gl_u8_throttle = SPEED_MIN;
                     break;
-                case sharp_right :
-                    gl_steering_en = sharp_right;
-                    xSemaphoreGiveFromISR(semaphore_steeringHandle, &semaphoreResult);
+                case throttle_80_percent:
+                    gl_u8_throttle = SPEED_MED;
                     break;
-                case left :
-                    gl_steering_en = left;
-                    xSemaphoreGiveFromISR(semaphore_steeringHandle, &semaphoreResult);
+                case throttle_90_percent:
+                    gl_u8_throttle = SPEED_HIGH;
                     break;
-                case sharp_left:
-                    gl_steering_en = sharp_left;
-                    xSemaphoreGiveFromISR(semaphore_steeringHandle, &semaphoreResult);
+                case throttle_100_percent:
+                    gl_u8_throttle = SPEED_MAX;
                     break;
                 default:
                     break;
             }
+        }
 
-            switch (Rx_data[0]) {
-                case brake_lights_off:
-                    gl_lights_en = brake_lights_off;
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case brake_lights_on:
-                    gl_lights_en = brake_lights_on;
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case right_indicators_off:
-                    gl_lights_en = right_indicators_off;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case right_indicators_on:
-                    gl_lights_en = right_indicators_on;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case left_indicators_off :
-                    gl_lights_en = left_indicators_off;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case left_indicators_on:
-                    gl_lights_en = left_indicators_on;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case hazard_indicators_off :
-                    gl_lights_en = hazard_indicators_off;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case hazard_indicators_on:
-                    gl_lights_en = hazard_indicators_on;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case front_lights_off :
-                    gl_lights_en = front_lights_off;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case front_lights_on :
-                    gl_lights_en = front_lights_on;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case reverse_lights_off:
-                    gl_lights_en = reverse_lights_off;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-                case reverse_lights_on:
-                    gl_lights_en = reverse_lights_on;
-
-                    xQueueSendFromISR(Lights_Queue, &gl_lights_en, &QueueResult);
-                    xSemaphoreGiveFromISR(Semaphore_Lights, &semaphoreResult);
-                    break;
-
-                default:
-                    break;
+        switch (rxData)
+        {
+            case Straight:
+            {
+                gl_steering_en = Straight;
+                xSemaphoreGive(semaphore_steeringHandle);
+                break;
             }
-            // HAL_UART_Receive_IT(&huart1, Rx_data, 100);
+            case right:
+            {
+                gl_steering_en = right;
+                xSemaphoreGive(semaphore_steeringHandle);
+                break;
+            }
+            case sharp_right :
+            {
+                gl_steering_en = sharp_right;
+                xSemaphoreGive(semaphore_steeringHandle);
+                break;
+            }
+            case left :
+            {
+                gl_steering_en = left;
+                xSemaphoreGive(semaphore_steeringHandle);
+                break;
+            }
+            case sharp_left:
+            {
+                gl_steering_en = sharp_left;
+                xSemaphoreGive(semaphore_steeringHandle);
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
 
+        switch (rxData)
+        {
+            case brake_lights_off:
+            {
+                gl_lights_en = brake_lights_off;
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case brake_lights_on:
+            {
+                gl_lights_en = brake_lights_on;
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case right_indicators_off:
+            {
+                gl_lights_en = right_indicators_off;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case right_indicators_on:
+            {
+                gl_lights_en = right_indicators_on;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case left_indicators_off :
+            {
+                gl_lights_en = left_indicators_off;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case left_indicators_on:
+            {
+                gl_lights_en = left_indicators_on;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case hazard_indicators_off :
+            {
+                gl_lights_en = hazard_indicators_off;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case hazard_indicators_on:
+            {
+                gl_lights_en = hazard_indicators_on;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case front_lights_off :
+            {
+                gl_lights_en = front_lights_off;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case front_lights_on :
+            {
+                gl_lights_en = front_lights_on;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case reverse_lights_off:
+            {
+                gl_lights_en = reverse_lights_off;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            case reverse_lights_on:
+            {
+                gl_lights_en = reverse_lights_on;
+
+                xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                xSemaphoreGive(Semaphore_Lights);
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
     }
-
 }
 
 
@@ -392,7 +458,6 @@ static void MX_TIM3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_TIM1_Init(void);
 static void MX_USART3_UART_Init(void);
-void StartDefaultTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -400,6 +465,7 @@ void StartDefaultTask(void const * argument);
 /* NADA END */
 
 /* SAKR BEGIN */
+void task_uart_processing(void * pvParameters);
 /* SAKR END */
 
 /* NORHAN BEGIN */
@@ -620,7 +686,8 @@ int main(void)
                  128,      /* Stack size in words, not bytes. */
                  ( void * ) NULL,    /* Parameter passed into the task. */
                  1,/* Priority at which the task is created. */
-                 &Ultra_Handel);      /* Used to pass out the created task's handle. */
+                 &Ultra_Handle);      /* Used to pass out the created task's handle. */
+
 
   xTaskCreate(
 		     Ultrasonictest_Task,       /* Function that implements the task. */
@@ -636,6 +703,15 @@ int main(void)
     /* NADA END */
 
     /* SAKR BEGIN */
+
+    xTaskCreate(
+            task_uart_processing,       /* Function that implements the task. */
+            "UART",          /* Text name for the task. */
+            128,      /* Stack size in words, not bytes. */
+            ( void * ) NULL,    /* Parameter passed into the task. */
+            1,/* Priority at which the task is created. */
+            NULL);      /* Used to pass out the created task's handle. */
+
     /* SAKR END */
 
     /* NORHAN BEGIN */
@@ -659,7 +735,7 @@ int main(void)
     /* NORHAN END */
 
     /* AHMED BEGIN */
-
+    UartRxQueue = xQueueCreate(APP_UART_RX_QUEUE_LENGTH, sizeof(uint8_t));
     /* AHMED END */
 
     /* HOSSAM BEGIN */
@@ -780,7 +856,7 @@ int main(void)
     /* NADA END */
 
     /* SAKR BEGIN */
-  //HAL_UART_Receive_IT(&huart1, Rx_data, 2);
+    HAL_UART_Receive_DMA(&huart3, uartDMARxBuffer, APP_UART_DMA_RX_BUFFER_LENGTH);
     /* SAKR END */
 
     /* NORHAN BEGIN */
