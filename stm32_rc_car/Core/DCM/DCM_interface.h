@@ -8,6 +8,7 @@
 #ifndef DCM_DCM_INTERFACE_H_
 #define DCM_DCM_INTERFACE_H_
 
+#include "app_interface.h"
 #include "DCM_config.h"
 #include "stm32f1xx_hal.h"
 /*******************************************************************************************************************
