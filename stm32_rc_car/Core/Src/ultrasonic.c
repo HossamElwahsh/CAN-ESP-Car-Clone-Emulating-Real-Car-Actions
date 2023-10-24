@@ -8,7 +8,13 @@ static uint32_t count;
 static uint16_t TIM1_ULTRA;
 static uint16_t TIM2_ULTRA;
 static uint8_t ULTRASONIC_FLAG;
-transmission_en  gl_transmission_en =Parking;
+extern transmission_en  gl_transmission_en;
+
+void delay_us (uint16_t us)
+{
+	__HAL_TIM_SET_COUNTER(&htim1,0);  // set the counter value a 0
+	while (__HAL_TIM_GET_COUNTER(&htim1) < us);  // wait for the counter to reach the us input in the parameter
+}
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 

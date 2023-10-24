@@ -11,6 +11,7 @@
 #include "stm32f1xx_hal.h"
 #include "DCM_interface.h"
 #include "cmsis_os.h"
+#include "Enums_isr.h"
 
 
 /* Gear Positions */
