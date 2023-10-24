@@ -196,13 +196,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 void task_uart_processing(void * pvParameters)
 {
-    uint8_t rxData = 0;
+    uint8_t received_byte = 0;
+
+    /* Initiate UART <> DMA reception */
+    HAL_UART_Receive_DMA(&huart3, uartDMARxBuffer, APP_UART_DMA_RX_BUFFER_LENGTH);
 
     for(;;)
     {
-        xQueueReceive(UartRxQueue, &rxData, portMAX_DELAY);
+        xQueueReceive(UartRxQueue, &received_byte, portMAX_DELAY);
 
-        switch (rxData)
+        switch (received_byte)
         {
             case Parking:
             {
@@ -259,7 +262,7 @@ void task_uart_processing(void * pvParameters)
         /* Throttle Readings */
         if (gl_transmission_en == Reverse || gl_transmission_en == Drive)
         {
-            switch (rxData)
+            switch (received_byte)
             {
                 case throttle_0_percent:
                     gl_u8_throttle = SPEED_ZERO;
@@ -281,7 +284,7 @@ void task_uart_processing(void * pvParameters)
             }
         }
 
-        switch (rxData)
+        switch (received_byte)
         {
             case Straight:
             {
@@ -319,7 +322,7 @@ void task_uart_processing(void * pvParameters)
             }
         }
 
-        switch (rxData)
+        switch (received_byte)
         {
             case brake_lights_off:
             {
@@ -501,7 +504,9 @@ void OLED_Function(void * pvParameters);
 void LightingSystem(void * pvParameter) {
     lights_en LedToPowerOn;
     uint8_t messagesWaiting = 0;
+
     xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
+
     for (;;) {
         xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
         messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
@@ -683,19 +688,19 @@ int main(void)
   xTaskCreate(
 		       Ultrasonic_Task,       /* Function that implements the task. */
                 "Ultrasonic",          /* Text name for the task. */
-                 128,      /* Stack size in words, not bytes. */
+                 250,      /* Stack size in words, not bytes. */
                  ( void * ) NULL,    /* Parameter passed into the task. */
                  1,/* Priority at which the task is created. */
                  &Ultra_Handle);      /* Used to pass out the created task's handle. */
 
-
-  xTaskCreate(
-		     Ultrasonictest_Task,       /* Function that implements the task. */
-                 "Ultrasonic_test",          /* Text name for the task. */
-                  128,      /* Stack size in words, not bytes. */
-                  ( void * ) NULL,    /* Parameter passed into the task. */
-                  1,/* Priority at which the task is created. */
-                  &Ultratest_Handel);      /* Used to pass out the created task's handle. */
+                 /* todo remove @nada */
+//  xTaskCreate(
+//		     Ultrasonictest_Task,       /* Function that implements the task. */
+//                 "Ultrasonic_test",          /* Text name for the task. */
+//                  250,      /* Stack size in words, not bytes. */
+//                  ( void * ) NULL,    /* Parameter passed into the task. */
+//                  1,/* Priority at which the task is created. */
+//                  &Ultratest_Handel);      /* Used to pass out the created task's handle. */
 
 
 
@@ -707,26 +712,28 @@ int main(void)
     xTaskCreate(
             task_uart_processing,       /* Function that implements the task. */
             "UART",          /* Text name for the task. */
-            128,      /* Stack size in words, not bytes. */
+            250,      /* Stack size in words, not bytes. */
             ( void * ) NULL,    /* Parameter passed into the task. */
-            1,/* Priority at which the task is created. */
+            0,/* Priority at which the task is created. */
             NULL);      /* Used to pass out the created task's handle. */
+
+    UartRxQueue = xQueueCreate(APP_UART_RX_QUEUE_LENGTH, APP_UART_RX_QUEUE_ITEM_SIZE);
 
     /* SAKR END */
 
     /* NORHAN BEGIN */
     xTaskCreate(
             LightingSystem,       /* Function that implements the task. */
-            "Lightings",          /* Text name for the task. */
-            128,      /* Stack size in words, not bytes. */
+            "Lights",          /* Text name for the task. */
+            250,      /* Stack size in words, not bytes. */
             (void *) NULL,    /* Parameter passed into the task. */
-            1,/* Priority at which the task is created. */
+            0,  /* Priority at which the task is created. */
             &Lights_Handle);      /* Used to pass out the created task's handle. */
 
     xTaskCreate(
             Blinking,       /* Function that implements the task. */
             "Blinking",          /* Text name for the task. */
-            128,      /* Stack size in words, not bytes. */
+            250,      /* Stack size in words, not bytes. */
             (void *) NULL,    /* Parameter passed into the task. */
             1,/* Priority at which the task is created. */
             &LED_Blink_Handle);      /* Used to pass out the created task's handle. */
@@ -735,7 +742,6 @@ int main(void)
     /* NORHAN END */
 
     /* AHMED BEGIN */
-    UartRxQueue = xQueueCreate(APP_UART_RX_QUEUE_LENGTH, sizeof(uint8_t));
     /* AHMED END */
 
     /* HOSSAM BEGIN */
@@ -856,7 +862,6 @@ int main(void)
     /* NADA END */
 
     /* SAKR BEGIN */
-    HAL_UART_Receive_DMA(&huart3, uartDMARxBuffer, APP_UART_DMA_RX_BUFFER_LENGTH);
     /* SAKR END */
 
     /* NORHAN BEGIN */
@@ -1147,7 +1152,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Channel3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Channel3_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel3_IRQn);
 
 }

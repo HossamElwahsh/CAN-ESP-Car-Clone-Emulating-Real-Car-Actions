@@ -16,7 +16,8 @@
 
 /* - uart processing */
 #define APP_UART_LAST_RX_BYTE       rx_byte
-#define APP_UART_RX_QUEUE_LENGTH    200
+#define APP_UART_RX_QUEUE_LENGTH    20
+#define APP_UART_RX_QUEUE_ITEM_SIZE 1
 #define APP_UART_DMA_RX_BUFFER_LENGTH 2
 
 /* SAKR END */
