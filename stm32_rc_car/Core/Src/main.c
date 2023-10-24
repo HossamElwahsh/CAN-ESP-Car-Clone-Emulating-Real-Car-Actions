@@ -38,9 +38,6 @@
 /* AHMED BEGIN */
 #include "fonts.h"
 #include "ssd1306.h"
-#include "test.h"
-#include "bitmap.h"
-#include "horse_anim.h"
 /* AHMED END */
 
 /* HOSSAM BEGIN */
