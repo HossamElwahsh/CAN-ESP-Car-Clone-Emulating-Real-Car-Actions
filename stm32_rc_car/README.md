@@ -4,6 +4,7 @@
 # Issues
 ## 1. UART ISR Not working
 - ### Environment
+  - FreeRTOS Kernel V10.0.1 
   - UART uses DMA
   - DMA Interrupt Priority: `0`
   - `configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY` = `5`
