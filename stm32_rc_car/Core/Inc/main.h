@@ -170,16 +170,6 @@ void Error_Handler(void);
 #define LED_FRONT_GPIO_Port GPIOB
 #define LED_RIGHT_Pin GPIO_PIN_15
 #define LED_RIGHT_GPIO_Port GPIOB
-#define LED_LEFT_Pin GPIO_PIN_8
-#define LED_LEFT_GPIO_Port GPIOA
-#define US_ECHO_Pin GPIO_PIN_9
-#define US_ECHO_GPIO_Port GPIOA
-#define US_TRIGGER_Pin GPIO_PIN_10
-#define US_TRIGGER_GPIO_Port GPIOA
-#define ESP_TX_Pin GPIO_PIN_6
-#define ESP_TX_GPIO_Port GPIOB
-#define ESP_RX_Pin GPIO_PIN_7
-#define ESP_RX_GPIO_Port GPIOB
 #define OLED_SCL_Pin GPIO_PIN_8
 #define OLED_SCL_GPIO_Port GPIOB
 #define OLED_SDA_Pin GPIO_PIN_9
