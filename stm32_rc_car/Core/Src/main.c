@@ -328,14 +328,14 @@ void task_uart_processing(void * pvParameters)
             {
                 gl_lights_en = brake_lights_off;
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case brake_lights_on:
             {
                 gl_lights_en = brake_lights_on;
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case right_indicators_off:
@@ -343,7 +343,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = right_indicators_off;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case right_indicators_on:
@@ -351,7 +351,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = right_indicators_on;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case left_indicators_off :
@@ -359,7 +359,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = left_indicators_off;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case left_indicators_on:
@@ -367,7 +367,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = left_indicators_on;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case hazard_indicators_off :
@@ -375,7 +375,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = hazard_indicators_off;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case hazard_indicators_on:
@@ -383,7 +383,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = hazard_indicators_on;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case front_lights_off :
@@ -391,7 +391,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = front_lights_off;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case front_lights_on :
@@ -399,7 +399,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = front_lights_on;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case reverse_lights_off:
@@ -407,7 +407,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = reverse_lights_off;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             case reverse_lights_on:
@@ -415,7 +415,7 @@ void task_uart_processing(void * pvParameters)
                 gl_lights_en = reverse_lights_on;
 
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                xSemaphoreGive(Semaphore_Lights);
+
                 break;
             }
             default:
@@ -437,8 +437,8 @@ typedef enum {
 } LED_STATUS;
 
 
-LED_STATUS Left_led_flag = OFF;
-LED_STATUS Right_led_flag = OFF;
+volatile LED_STATUS Left_led_flag = OFF;
+volatile LED_STATUS Right_led_flag = OFF;
 /* NORHAN END */
 
 /* AHMED BEGIN */
@@ -503,68 +503,104 @@ void OLED_Function(void * pvParameters);
 /* NORHAN BEGIN */
 void LightingSystem(void * pvParameter) {
     lights_en LedToPowerOn;
-    uint8_t messagesWaiting = 0;
 
-    xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
 
     for (;;) {
-        xSemaphoreTake(Semaphore_Lights, portMAX_DELAY);
-        messagesWaiting = uxQueueMessagesWaiting(Lights_Queue);
-        while (messagesWaiting != 0) {
-            xQueueReceive(Lights_Queue, &LedToPowerOn, portMAX_DELAY);
-            if (LedToPowerOn == brake_lights_off) {
+
+        	xQueueReceive(Lights_Queue, &LedToPowerOn, portMAX_DELAY);
+            if (LedToPowerOn == brake_lights_off)
+            {
                 HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_RESET);
-            } else if (LedToPowerOn == brake_lights_on) {
+            }
+            else if (LedToPowerOn == brake_lights_on)
+            {
                 HAL_GPIO_WritePin(LED_BRAKES_GPIO_Port, LED_BRAKES_Pin, GPIO_PIN_SET);
-            } else if (LedToPowerOn == front_lights_off) {
+            }
+            else if (LedToPowerOn == front_lights_off)
+            {
                 HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_RESET);
-            } else if (LedToPowerOn == front_lights_on) {
+            }
+            else if (LedToPowerOn == front_lights_on)
+            {
                 HAL_GPIO_WritePin(LED_FRONT_GPIO_Port, LED_FRONT_Pin, GPIO_PIN_SET);
-            } else if (LedToPowerOn == reverse_lights_off) {
+            }
+            else if (LedToPowerOn == reverse_lights_off)
+            {
                 HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_RESET);
-            } else if (LedToPowerOn == reverse_lights_on) {
+            }
+            else if (LedToPowerOn == reverse_lights_on)
+            {
                 HAL_GPIO_WritePin(LED_REVERSE_GPIO_Port, LED_REVERSE_Pin, GPIO_PIN_SET);
-            } else if (LedToPowerOn == left_indicators_off) {
+            }
+            else if (LedToPowerOn == left_indicators_off)
+            {
                 Left_led_flag = OFF;
-                vTaskSuspend(LED_Blink_Handle);
-            } else if (LedToPowerOn == left_indicators_on) {
+                vTaskResume(LED_Blink_Handle);
+            }
+            else if (LedToPowerOn == left_indicators_on)
+            {
                 Left_led_flag = ON;
                 vTaskResume(LED_Blink_Handle);
-            } else if (LedToPowerOn == right_indicators_off) {
+            }
+            else if (LedToPowerOn == right_indicators_off)
+            {
                 Right_led_flag = OFF;
-                vTaskSuspend(LED_Blink_Handle);
-            } else if (LedToPowerOn == right_indicators_on) {
+                vTaskResume(LED_Blink_Handle);
+            }
+            else if (LedToPowerOn == right_indicators_on)
+            {
                 Right_led_flag = ON;
                 vTaskResume(LED_Blink_Handle);
             }
 
-            messagesWaiting--;
 
-
-        }
     }
 
 
 }
 
+
+
 void Blinking(void * pvParameter)
 {
-    vTaskSuspend(LED_Blink_Handle);
+	uint8_t toggle=GPIO_PIN_RESET;
+    vTaskSuspend(NULL);
 
-    for (;;) {
-        if (Right_led_flag == ON) {
-            HAL_GPIO_TogglePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin);
-        } else if (Right_led_flag == OFF) {
+    for (;;)
+    {
+
+    	if(toggle == GPIO_PIN_RESET)
+    	{
+    		toggle = GPIO_PIN_SET;
+    	}
+    	else
+    	{
+    		toggle = GPIO_PIN_RESET;
+    	}
+
+        if (Right_led_flag == ON)
+        {
+
+        	HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, toggle);
+        }
+
+        else if (Right_led_flag == OFF)
+        {
             HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, GPIO_PIN_RESET);
         }
 
-
-        if (Left_led_flag == ON) {
-            HAL_GPIO_TogglePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin);
-        } else if (Left_led_flag == OFF) {
+        if (Left_led_flag == ON)
+        {
+        	HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, toggle);
+        }
+        else if (Left_led_flag == OFF)
+        {
             HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, GPIO_PIN_RESET);
         }
-
+        if (Left_led_flag == OFF && Right_led_flag == OFF)
+        {
+            vTaskSuspend(NULL);
+        }
 
         osDelay(500);
     }
@@ -688,9 +724,9 @@ int main(void)
   xTaskCreate(
 		       Ultrasonic_Task,       /* Function that implements the task. */
                 "Ultrasonic",          /* Text name for the task. */
-                 250,      /* Stack size in words, not bytes. */
+                 128,      /* Stack size in words, not bytes. */
                  ( void * ) NULL,    /* Parameter passed into the task. */
-                 1,/* Priority at which the task is created. */
+                 2,/* Priority at which the task is created. */
                  &Ultra_Handle);      /* Used to pass out the created task's handle. */
 
                  /* todo remove @nada */
@@ -712,9 +748,9 @@ int main(void)
     xTaskCreate(
             task_uart_processing,       /* Function that implements the task. */
             "UART",          /* Text name for the task. */
-            250,      /* Stack size in words, not bytes. */
+            128,      /* Stack size in words, not bytes. */
             ( void * ) NULL,    /* Parameter passed into the task. */
-            0,/* Priority at which the task is created. */
+            4,/* Priority at which the task is created. */
             NULL);      /* Used to pass out the created task's handle. */
 
     UartRxQueue = xQueueCreate(APP_UART_RX_QUEUE_LENGTH, APP_UART_RX_QUEUE_ITEM_SIZE);
@@ -725,15 +761,15 @@ int main(void)
     xTaskCreate(
             LightingSystem,       /* Function that implements the task. */
             "Lights",          /* Text name for the task. */
-            250,      /* Stack size in words, not bytes. */
+            128,      /* Stack size in words, not bytes. */
             (void *) NULL,    /* Parameter passed into the task. */
-            0,  /* Priority at which the task is created. */
+            3,  /* Priority at which the task is created. */
             &Lights_Handle);      /* Used to pass out the created task's handle. */
 
     xTaskCreate(
             Blinking,       /* Function that implements the task. */
             "Blinking",          /* Text name for the task. */
-            250,      /* Stack size in words, not bytes. */
+            128,      /* Stack size in words, not bytes. */
             (void *) NULL,    /* Parameter passed into the task. */
             1,/* Priority at which the task is created. */
             &LED_Blink_Handle);      /* Used to pass out the created task's handle. */
@@ -766,7 +802,7 @@ int main(void)
 
     /* AHMED BEGIN */
     SSD1306_Init(); // initialize the display
-    xTaskCreate(OLED_Function, "oled", 200, (void *) NULL, 0, NULL);
+    xTaskCreate(OLED_Function, "oled", 128, (void *) NULL, 1, NULL);
     /* AHMED END */
 
     /* HOSSAM BEGIN */
@@ -1244,6 +1280,7 @@ void OLED_Function(void * pvParameters) {
             /*		DO NOTHING		*/
         }
         SSD1306_UpdateScreen(); // update screen
+        vTaskDelay(1000);
     }
     /* USER CODE END 5 */
 }
