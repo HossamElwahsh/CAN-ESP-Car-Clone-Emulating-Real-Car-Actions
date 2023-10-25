@@ -45,6 +45,7 @@
 /* HOSSAM END */
 
 /* SALMA BEGIN */
+#include "../DCM/DCM_RTOS.h"
 /* SALMA END */
 
 
@@ -91,6 +92,7 @@ TaskHandle_t OLED_Handle = NULL;
 /* HOSSAM END */
 
 /* SALMA BEGIN */
+TaskHandle_t TH_DCM = NULL;
 /* SALMA END */
 
 /* USER CODE END PTD */
@@ -786,6 +788,12 @@ int main(void)
     /* HOSSAM END */
 
     /* SALMA BEGIN */
+    xTaskCreate(          Task_DCM,     	/* Function that implements the task. */
+                          "Task",    		/* Text name for the task. */
+                          128,              /* Stack size in words, not bytes. */
+                          ( void * ) 1,     /* Parameter passed into the task. */
+                          1,                /* Priority at which the task is created. */
+                          &TH_DCM);      	/* Used to pass out the created task's handle. */
     /* SALMA END */
 
   /* USER CODE END 2 */
