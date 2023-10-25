@@ -208,7 +208,7 @@ void task_uart_processing(void * pvParameters)
     for(;;)
     {
         xQueueReceive(UartRxQueue, &received_byte, portMAX_DELAY);
-
+        xSemaphoreGive(semaphore_OLEDHandle);
         switch (received_byte)
         {
             case Parking:
@@ -1276,7 +1276,7 @@ void OLED_Function(void * pvParameters) {
         xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
         SSD1306_Clear();
         SSD1306_GotoXY(10, 10); // goto 10, 10
-        SSD1306_Puts("Current mode: ", &Font_7x10, 1);
+//        SSD1306_Puts("Current mode: ", &Font_7x10, 1);
 
         if (gl_transmission_en == Neutral) {
             //SSD1306_GotoXY(40, 25);
@@ -1293,11 +1293,34 @@ void OLED_Function(void * pvParameters) {
         } else {
             /*		DO NOTHING		*/
         }
-        SSD1306_GotoXY(10, 35);
-        SSD1306_Puts("Current Speed:", &Font_7x10, 1);
-        SSD1306_GotoXY(45, 50);
+        SSD1306_GotoXY(10, 30);
+        //SSD1306_Puts("Current Speed:", &Font_7x10, 1);
+       // SSD1306_GotoXY(45, 50);
         itoa (gl_u8_throttle,string_buffer,10);
         SSD1306_Puts(string_buffer, &Font_7x10, 1);
+
+        SSD1306_GotoXY(10, 50);
+        switch(gl_steering_en)
+        {
+        case Straight:
+        	SSD1306_Puts("ST", &Font_11x18, 1);
+        	break;
+        case right:
+                	SSD1306_Puts("R", &Font_11x18, 1);
+                	break;
+        case sharp_right:
+                	SSD1306_Puts("SR", &Font_11x18, 1);
+                	break;
+        case left:
+                	SSD1306_Puts("L", &Font_11x18, 1);
+                	break;
+        case Straight:
+                	SSD1306_Puts("SL", &Font_11x18, 1);
+                	break;
+
+        default:
+        	break;
+        }
         SSD1306_UpdateScreen(); // update screen
         vTaskDelay(1000);
     }
