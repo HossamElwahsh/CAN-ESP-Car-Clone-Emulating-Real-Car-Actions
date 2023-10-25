@@ -11,7 +11,6 @@ void Ultrasonic_Task (void*pvParameter )
  transmission_en  transmission_Ultra;
  uint16_t  DISTANCE;    
 
-
    vTaskSuspend(NULL);
   for(;;)
   {

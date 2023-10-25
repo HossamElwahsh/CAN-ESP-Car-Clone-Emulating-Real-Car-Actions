@@ -229,7 +229,7 @@ void task_uart_processing(void * pvParameters)
                 break;
             }
             case Drive:
-            {    xSemaphoreGive(Semaphore_Ultrasonic); /*for the ultrasonic sensor...*/
+            {
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Drive; /*updating car transmission state for later check*/
@@ -244,7 +244,7 @@ void task_uart_processing(void * pvParameters)
                 break;
             }
             case Reverse:
-            {  xSemaphoreGive(Semaphore_Ultrasonic);
+            {
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Reverse; /*updating car transmission state  for later check */
