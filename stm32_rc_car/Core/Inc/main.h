@@ -152,8 +152,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define LED_BRAKES_Pin GPIO_PIN_14
 #define LED_BRAKES_GPIO_Port GPIOC
-#define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_1
-#define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_1_RIGHT_Pin GPIO_PIN_2
 #define MOTOR_IN_1_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_2_RIGHT_Pin GPIO_PIN_3
@@ -162,7 +160,9 @@ void Error_Handler(void);
 #define MOTOR_IN_3_LEFT_GPIO_Port GPIOA
 #define MOTOR_IN_4_LEFT_Pin GPIO_PIN_5
 #define MOTOR_IN_4_LEFT_GPIO_Port GPIOA
-#define MOTOR_EN_B_LEFT_Pin GPIO_PIN_6
+#define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_6
+#define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
+#define MOTOR_EN_B_LEFT_Pin GPIO_PIN_7
 #define MOTOR_EN_B_LEFT_GPIO_Port GPIOA
 #define US_TRIGGER_1_Drive_Pin GPIO_PIN_0
 #define US_TRIGGER_1_Drive_GPIO_Port GPIOB
