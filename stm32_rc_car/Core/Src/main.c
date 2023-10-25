@@ -1273,7 +1273,7 @@ void OLED_Function(void * pvParameters) {
 	char string_buffer[5]={0};
     /* Infinite loop */
     for (;;) {
-        //xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
+        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
         SSD1306_Clear();
         SSD1306_GotoXY(10, 10); // goto 10, 10
         SSD1306_Puts("Current mode: ", &Font_7x10, 1);
