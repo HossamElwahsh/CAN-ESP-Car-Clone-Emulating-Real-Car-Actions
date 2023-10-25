@@ -1314,7 +1314,7 @@ void OLED_Function(void * pvParameters) {
         case left:
                 	SSD1306_Puts("L", &Font_11x18, 1);
                 	break;
-        case Straight:
+        case sharp_left:
                 	SSD1306_Puts("SL", &Font_11x18, 1);
                 	break;
 
