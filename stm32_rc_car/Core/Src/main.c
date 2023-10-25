@@ -1273,7 +1273,7 @@ void OLED_Function(void * pvParameters) {
 	char string_buffer[5]={0};
     /* Infinite loop */
     for (;;) {
-        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
+      //  xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
         SSD1306_Clear();
         SSD1306_GotoXY(10, 10); // goto 10, 10
 //        SSD1306_Puts("Current mode: ", &Font_7x10, 1);
@@ -1293,13 +1293,13 @@ void OLED_Function(void * pvParameters) {
         } else {
             /*		DO NOTHING		*/
         }
-        SSD1306_GotoXY(10, 30);
+        SSD1306_GotoXY(25, 10);
         //SSD1306_Puts("Current Speed:", &Font_7x10, 1);
        // SSD1306_GotoXY(45, 50);
         itoa (gl_u8_throttle,string_buffer,10);
-        SSD1306_Puts(string_buffer, &Font_7x10, 1);
+        SSD1306_Puts(string_buffer, &Font_11x18, 1);
 
-        SSD1306_GotoXY(10, 50);
+        SSD1306_GotoXY(50, 10);
         switch(gl_steering_en)
         {
         case Straight:
