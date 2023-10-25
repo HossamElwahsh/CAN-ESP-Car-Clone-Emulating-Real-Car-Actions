@@ -1270,29 +1270,34 @@ static void MX_GPIO_Init(void)
   */
 void OLED_Function(void * pvParameters) {
     /* USER CODE BEGIN 5 */
+	char string_buffer[5]={0};
     /* Infinite loop */
-    xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
     for (;;) {
-        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
+        //xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
         SSD1306_Clear();
         SSD1306_GotoXY(10, 10); // goto 10, 10
-        SSD1306_Puts("Current mode:", &Font_7x10, 1); // print Hello
+        SSD1306_Puts("Current mode: ", &Font_7x10, 1);
 
         if (gl_transmission_en == Neutral) {
-            SSD1306_GotoXY(40, 30);
+            //SSD1306_GotoXY(40, 25);
             SSD1306_Puts("N", &Font_11x18, 1);
         } else if (gl_transmission_en == Parking) {
-            SSD1306_GotoXY(55, 30);
+            //SSD1306_GotoXY(55, 25);
             SSD1306_Puts("P", &Font_11x18, 1);
         } else if (gl_transmission_en == Drive) {
-            SSD1306_GotoXY(10, 30);
+            //SSD1306_GotoXY(10, 25);
             SSD1306_Puts("D", &Font_11x18, 1);
         } else if (gl_transmission_en == Reverse) {
-            SSD1306_GotoXY(25, 30);
+           // SSD1306_GotoXY(25, 25);
             SSD1306_Puts("R", &Font_11x18, 1);
         } else {
             /*		DO NOTHING		*/
         }
+        SSD1306_GotoXY(10, 35);
+        SSD1306_Puts("Current Speed:", &Font_7x10, 1);
+        SSD1306_GotoXY(45, 50);
+        itoa (gl_u8_throttle,string_buffer,10);
+        SSD1306_Puts(string_buffer, &Font_7x10, 1);
         SSD1306_UpdateScreen(); // update screen
         vTaskDelay(1000);
     }
