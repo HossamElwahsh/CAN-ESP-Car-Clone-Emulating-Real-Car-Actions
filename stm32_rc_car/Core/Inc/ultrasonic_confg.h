@@ -5,9 +5,9 @@
 *forward use channel 3 and back uses channel 2
 */
 
-#define    TRIGER_FORWARD_PORT   GPIOA
-#define    TRIGER_BACKWARD_PORT  GPIOA
-#define    TRIGER_FORWARD_PIN   GPIO_PIN_1
-#define    TRIGER_BACKWARD_PIN  GPIO_PIN_2
+#define    TRIGER_FORWARD_PORT   GPIOB
+#define    TRIGER_BACKWARD_PORT  GPIOB
+#define    TRIGER_FORWARD_PIN   GPIO_PIN_0
+#define    TRIGER_BACKWARD_PIN  GPIO_PIN_1
 #define    CRACH_DISTANCE       25
 #endif //ULTRASONIC_CONFG_H_

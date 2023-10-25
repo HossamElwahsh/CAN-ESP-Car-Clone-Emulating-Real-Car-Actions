@@ -110,7 +110,7 @@ BaseType_t semaphoreResult = pdFALSE;
 /*creating enum of the 4 transmissions that the car would have..*/
 
 lights_en gl_lights_en = front_lights_on;
-transmission_en  gl_transmission_en = Parking;
+transmission_en  gl_transmission_en = Drive;
 Steering_en gl_steering_en = Straight;
 /* todo should be int @sakr */
 uint8_t gl_u8_throttle = SPEED_ZERO;
@@ -214,6 +214,7 @@ void task_uart_processing(void * pvParameters)
                 gl_u8_throttle = SPEED_ZERO;
                 xSemaphoreGive(semaphore_transmissionHandle);
                 xSemaphoreGive(semaphore_OLEDHandle);
+                vTaskSuspend(Ultra_Handle);
                 break;
             }
             case Neutral:
@@ -224,17 +225,17 @@ void task_uart_processing(void * pvParameters)
                 gl_u8_throttle = SPEED_ZERO;
                 xSemaphoreGive(semaphore_transmissionHandle);
                 xSemaphoreGive(semaphore_OLEDHandle);
-
+                vTaskSuspend(Ultra_Handle);
                 break;
             }
             case Drive:
-            {
+            {    xSemaphoreGive(Semaphore_Ultrasonic); /*for the ultrasonic sensor...*/
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Drive; /*updating car transmission state for later check*/
                     xSemaphoreGive(semaphore_transmissionHandle);
                     xSemaphoreGive(semaphore_OLEDHandle);
-                    xSemaphoreGive(Semaphore_Ultrasonic); /*for the ultrasonic sensor...*/
+                    vTaskResume(Ultra_Handle);
                 }
                 else
                 {
@@ -243,13 +244,13 @@ void task_uart_processing(void * pvParameters)
                 break;
             }
             case Reverse:
-            {
+            {  xSemaphoreGive(Semaphore_Ultrasonic);
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Reverse; /*updating car transmission state  for later check */
                     xSemaphoreGive(semaphore_transmissionHandle);
                     xSemaphoreGive(semaphore_OLEDHandle);
-                    xSemaphoreGive(Semaphore_Ultrasonic); /*for the ultrasonic sensor...*/
+                    vTaskResume(Ultra_Handle);
                 }
                 break;
             }

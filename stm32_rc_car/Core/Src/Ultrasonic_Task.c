@@ -5,18 +5,16 @@
 
 extern transmission_en  gl_transmission_en;
 extern SemaphoreHandle_t Semaphore_Ultrasonic;
-ULTRASONIC_PASS Pass_Signal;
+ULTRASONIC_PASS Pass_Signal=Green_Flag;
 void Ultrasonic_Task (void*pvParameter )
 {
  transmission_en  transmission_Ultra;
  uint16_t  DISTANCE;    
 
-xSemaphoreTake(Semaphore_Ultrasonic, portMAX_DELAY);
 
+   vTaskSuspend(NULL);
   for(;;)
   {
-
-	  xSemaphoreTake(Semaphore_Ultrasonic, portMAX_DELAY);
 	   transmission_Ultra=gl_transmission_en;
 	   if(Ultrasonic_getdistance(transmission_Ultra,& DISTANCE)==SUCCESS_){
 	

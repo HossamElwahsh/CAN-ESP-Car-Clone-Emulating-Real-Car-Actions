@@ -83,7 +83,7 @@ case Drive:
 		if(TIM2_ULTRA>TIM1_ULTRA){
 		DIFFERNCE=TIM2_ULTRA-TIM1_ULTRA;
 		}
-	        else{
+	   else{
 		DIFFERNCE=(0xffff-TIM1_ULTRA)+TIM2_ULTRA;
 		}
 		*DISTANCE=DIFFERNCE* 0.034/2;
