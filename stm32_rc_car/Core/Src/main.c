@@ -71,6 +71,7 @@ SemaphoreHandle_t Semaphore_Lights;
 /*NOURHAN END*/
 /*AHMED BEGIN*/
 QueueHandle_t UartRxQueue;
+TaskHandle_t OLED_Handle = NULL;
 /*AHMED END*/
 
 /* SAKR BEGIN */
@@ -803,7 +804,7 @@ int main(void)
 
     /* AHMED BEGIN */
     SSD1306_Init(); // initialize the display
-    xTaskCreate(OLED_Function, "oled", 128, (void *) NULL, 1, NULL);
+    xTaskCreate(OLED_Function, "oled", 128, (void *) NULL, 1, &OLED_Handle);
     /* AHMED END */
 
     /* HOSSAM BEGIN */
@@ -819,7 +820,6 @@ int main(void)
 
 
     /* NADA BEGIN */
- Semaphore_Ultrasonic = xSemaphoreCreateBinary();
     /* NADA END */
 
     /* SAKR BEGIN */
@@ -1258,9 +1258,9 @@ static void MX_GPIO_Init(void)
 void OLED_Function(void * pvParameters) {
     /* USER CODE BEGIN 5 */
     /* Infinite loop */
-    xSemaphoreTake(semaphore_transmissionHandle, portMAX_DELAY);
+    xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
     for (;;) {
-        xSemaphoreTake(semaphore_transmissionHandle, portMAX_DELAY);
+        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
         SSD1306_Clear();
         SSD1306_GotoXY(10, 10); // goto 10, 10
         SSD1306_Puts("Current mode:", &Font_7x10, 1); // print Hello
