@@ -708,6 +708,15 @@ void task_process_can_data(void * pvParameters)
 						/* brake lights state changed - toggle last state */
 						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_break_lights);
 
+                        if(TRUE == st_gs_last_data_state.st_lighting_state.bool_break_lights)
+                        {
+                            st_gs_last_data_state.u8_throttle_val = GENERATE_ESP_FRAME(APP_ESP_HEADER_THROTTLE, APP_ESP_DATA_THROTTLE_STOP_MAP_VAL);
+                        }
+                        else
+                        {
+                            /* Keep last throttle value in memory */
+                        }
+
 						/* queue to ESP */
 						u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_break_lights);
 
