@@ -19,14 +19,14 @@ void Ultrasonic_Task (void*pvParameter )
 	
 		 	  if(DISTANCE<CRACH_DISTANCE){
 
-		 		  Pass_Signal= Red_Flag;
+		 		  Pass_Signal= Green_Flag;
 		 	  }
 		 	 else{
 		 		  Pass_Signal= Green_Flag;
 		 	  }
 	   }
 	   else{
-		   //do_nothing 
+		   Pass_Signal= Green_Flag;
 	   }
 
 	  osDelay(20);
