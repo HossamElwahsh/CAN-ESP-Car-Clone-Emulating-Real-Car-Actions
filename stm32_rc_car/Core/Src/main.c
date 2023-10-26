@@ -172,6 +172,7 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
 
+osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
 /* NADA BEGIN */
@@ -249,7 +250,8 @@ void task_uart_processing(void * pvParameters)
             }
             case Reverse:
             {
-            	vTaskResume(Ultra_Handle);
+            	vTaskSuspend(Ultra_Handle);
+            	//vTaskResume(Ultra_Handle);
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Reverse; /*updating car transmission state  for later check */
@@ -664,8 +666,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -773,7 +774,7 @@ int main(void)
             "Lights",          /* Text name for the task. */
             128,      /* Stack size in words, not bytes. */
             (void *) NULL,    /* Parameter passed into the task. */
-            3,  /* Priority at which the task is created. */
+            1,  /* Priority at which the task is created. */
             &Lights_Handle);      /* Used to pass out the created task's handle. */
 
     xTaskCreate(
@@ -798,7 +799,7 @@ int main(void)
                           "Task",    		/* Text name for the task. */
                           128,              /* Stack size in words, not bytes. */
                           ( void * ) 1,     /* Parameter passed into the task. */
-                          1,                /* Priority at which the task is created. */
+                          3,                /* Priority at which the task is created. */
                           &TH_DCM);      	/* Used to pass out the created task's handle. */
     /* SALMA END */
 
@@ -905,6 +906,9 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 250);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
     /* add threads, ... */
 
@@ -1329,6 +1333,73 @@ void OLED_Function(void * pvParameters) {
 }
 
 /* USER CODE END 4 */
+
+/* USER CODE BEGIN Header_StartDefaultTask */
+/**
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
+/* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void const * argument)
+{
+  /* USER CODE BEGIN 5 */
+	char string_buffer[5]={0};
+    /* Infinite loop */
+    for (;;) {
+        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
+        SSD1306_Clear();
+        SSD1306_GotoXY(10, 10); // goto 10, 10
+/*        SSD1306_Puts("Current mode: ", &Font_7x10, 1);*/
+
+        if (gl_transmission_en == Neutral) {
+            //SSD1306_GotoXY(40, 25);
+            SSD1306_Puts("N", &Font_11x18, 1);
+        } else if (gl_transmission_en == Parking) {
+            //SSD1306_GotoXY(55, 25);
+            SSD1306_Puts("P", &Font_11x18, 1);
+        } else if (gl_transmission_en == Drive) {
+            //SSD1306_GotoXY(10, 25);
+            SSD1306_Puts("D", &Font_11x18, 1);
+        } else if (gl_transmission_en == Reverse) {
+           // SSD1306_GotoXY(25, 25);
+            SSD1306_Puts("R", &Font_11x18, 1);
+        } else {
+            /*		DO NOTHING		*/
+        }
+        SSD1306_GotoXY(25, 10);
+        //SSD1306_Puts("Current Speed:", &Font_7x10, 1);
+       // SSD1306_GotoXY(45, 50);
+        itoa (gl_u8_throttle,string_buffer,10);
+        SSD1306_Puts(string_buffer, &Font_11x18, 1);
+
+        SSD1306_GotoXY(50, 10);
+        switch(gl_steering_en)
+        {
+        case Straight:
+        	SSD1306_Puts("ST", &Font_11x18, 1);
+        	break;
+        case right:
+                	SSD1306_Puts("R", &Font_11x18, 1);
+                	break;
+        case sharp_right:
+                	SSD1306_Puts("SR", &Font_11x18, 1);
+                	break;
+        case left:
+                	SSD1306_Puts("L", &Font_11x18, 1);
+                	break;
+        case sharp_left:
+                	SSD1306_Puts("SL", &Font_11x18, 1);
+                	break;
+
+        default:
+        	break;
+        }
+        SSD1306_UpdateScreen(); // update screen
+        vTaskDelay(1000);
+    }
+  /* USER CODE END 5 */
+}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

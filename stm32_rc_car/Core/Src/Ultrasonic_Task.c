@@ -19,7 +19,7 @@ void Ultrasonic_Task (void*pvParameter )
 	
 		 	  if(DISTANCE<CRACH_DISTANCE){
 
-		 		  Pass_Signal= Green_Flag;
+		 		  Pass_Signal= Red_Flag;
 		 	  }
 		 	 else{
 		 		  Pass_Signal= Green_Flag;
@@ -29,11 +29,11 @@ void Ultrasonic_Task (void*pvParameter )
 		   Pass_Signal= Green_Flag;
 	   }
 
-	  osDelay(20);
+	  osDelay(250);
   }
 }
 
-
+/*
 void Ultrasonictest_Task(void*pvParameter){
 	for(;;){
 if(gl_transmission_en==Drive||gl_transmission_en==Reverse)	{
