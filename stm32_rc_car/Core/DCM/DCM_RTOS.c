@@ -179,13 +179,17 @@ static void DCM_CheckSteeringBackward(uint8_t a_steering_position)
 void Task_DCM(void *pvParameters)
 {
     /* take semaphore once at init to clear it */
-    xSemaphoreTake(GEAR_SEMAPHORE, portMAX_DELAY);
-    xSemaphoreTake(STEERING_SEMAPHORE, portMAX_DELAY);
+   // xSemaphoreTake(GEAR_SEMAPHORE, portMAX_DELAY);
+    //xSemaphoreTake(STEERING_SEMAPHORE, portMAX_DELAY);
 
+
+	//uint8_t ayhaga;
     for (;;)
     {
-        if (xSemaphoreTake(GEAR_SEMAPHORE, portMAX_DELAY) == pdTRUE && xSemaphoreTake(STEERING_SEMAPHORE, portMAX_DELAY) == pdTRUE)
+
+        if (xSemaphoreTake(GEAR_SEMAPHORE, portMAX_DELAY) == pdTRUE || xSemaphoreTake(STEERING_SEMAPHORE, portMAX_DELAY) == pdTRUE)
         {
+
             switch (GEAR_POSITION)
             {
                 case GEAR_DRIVE:

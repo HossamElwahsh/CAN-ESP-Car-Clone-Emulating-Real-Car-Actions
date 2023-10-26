@@ -172,7 +172,6 @@ TIM_HandleTypeDef htim3;
 UART_HandleTypeDef huart3;
 DMA_HandleTypeDef hdma_usart3_rx;
 
-osThreadId defaultTaskHandle;
 /* USER CODE BEGIN PV */
 
 /* NADA BEGIN */
@@ -234,12 +233,13 @@ void task_uart_processing(void * pvParameters)
             }
             case Drive:
             {
+            	vTaskResume(Ultra_Handle);
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Drive; /*updating car transmission state for later check*/
                     xSemaphoreGive(semaphore_transmissionHandle);
                     xSemaphoreGive(semaphore_OLEDHandle);
-                    vTaskResume(Ultra_Handle);
+
                 }
                 else
                 {
@@ -249,12 +249,13 @@ void task_uart_processing(void * pvParameters)
             }
             case Reverse:
             {
+            	vTaskResume(Ultra_Handle);
                 if (Pass_Signal == Green_Flag)
                 {
                     gl_transmission_en = Reverse; /*updating car transmission state  for later check */
                     xSemaphoreGive(semaphore_transmissionHandle);
                     xSemaphoreGive(semaphore_OLEDHandle);
-                    vTaskResume(Ultra_Handle);
+
                 }
                 break;
             }
@@ -287,6 +288,8 @@ void task_uart_processing(void * pvParameters)
                 default:
                     break;
             }
+
+            	xSemaphoreGive(semaphore_transmissionHandle);
         }
 
         switch (received_byte)
@@ -661,7 +664,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -901,9 +905,6 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 250);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
   /* USER CODE BEGIN RTOS_THREADS */
     /* add threads, ... */
 
@@ -1273,10 +1274,10 @@ void OLED_Function(void * pvParameters) {
 	char string_buffer[5]={0};
     /* Infinite loop */
     for (;;) {
-      //  xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
+        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
         SSD1306_Clear();
         SSD1306_GotoXY(10, 10); // goto 10, 10
-//        SSD1306_Puts("Current mode: ", &Font_7x10, 1);
+/*        SSD1306_Puts("Current mode: ", &Font_7x10, 1);*/
 
         if (gl_transmission_en == Neutral) {
             //SSD1306_GotoXY(40, 25);
@@ -1328,45 +1329,6 @@ void OLED_Function(void * pvParameters) {
 }
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-  /* USER CODE BEGIN 5 */
-    /* Infinite loop */
-    xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
-    for (;;) {
-        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
-        SSD1306_Clear();
-        SSD1306_GotoXY(10, 10); // goto 10, 10
-        SSD1306_Puts("Current mode:", &Font_7x10, 1); // print Hello
-
-        if (gl_transmission_en == Neutral) {
-            SSD1306_GotoXY(40, 30);
-            SSD1306_Puts("N", &Font_11x18, 1);
-        } else if (gl_transmission_en == Parking) {
-            SSD1306_GotoXY(55, 30);
-            SSD1306_Puts("P", &Font_11x18, 1);
-        } else if (gl_transmission_en == Drive) {
-            SSD1306_GotoXY(10, 30);
-            SSD1306_Puts("D", &Font_11x18, 1);
-        } else if (gl_transmission_en == Reverse) {
-            SSD1306_GotoXY(25, 30);
-            SSD1306_Puts("R", &Font_11x18, 1);
-        } else {
-            /*		DO NOTHING		*/
-        }
-        SSD1306_UpdateScreen(); // update screen
-        vTaskDelay(1000);
-    }
-  /* USER CODE END 5 */
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode
