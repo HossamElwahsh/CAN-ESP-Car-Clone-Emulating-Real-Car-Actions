@@ -5,7 +5,7 @@
 #include "ultrasonic_confg.h"
 #include "app_interface.h"
 
-#define time_out      10000000U
+#define time_out      2000000U
 
 typedef enum{
 	
