@@ -47,7 +47,7 @@
 #define STEERING_SEMAPHORE      (semaphore_steeringHandle)
 
 /* External variables --------------------------------------------------------*/
-extern throttle_en gl_u8_throttle;
+extern uint8_t gl_u8_throttle;
 extern Steering_en gl_steering_en;
 extern transmission_en gl_transmission_en;
 
