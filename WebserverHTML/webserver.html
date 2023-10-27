@@ -51,27 +51,27 @@
         }
 
         /* Right indicator light on selector class 'ir' */
-        #tbl-lights.ir #lights-indicators > span.off-right
+        #tbl-lights.ir #lights-indicators span.off-right
         {
             display: none;
         }
-        #tbl-lights:not(.ir) #lights-indicators > span.on-right
+        #tbl-lights:not(.ir) #lights-indicators span.on-right
         {
             display: none;
         }
 
         /* Right indicator light on selector class 'il' */
-        #tbl-lights.il #lights-indicators > span.off-left
+        #tbl-lights.il #lights-indicators span.off-left
         {
             display: none;
         }
-        #tbl-lights:not(.il) #lights-indicators > span.on-left
+        #tbl-lights:not(.il) #lights-indicators span.on-left
         {
             display: none;
         }
 
         /* Indicators animation */
-        span.on-right
+        span.indicators-animate
         {
             animation: blink 1s linear infinite;
         }
@@ -93,10 +93,6 @@
             {
                 opacity: 0;
             }
-        }
-        span.on-left
-        {
-            animation: blink 1s linear infinite;
         }
 
         /* Transmission styling */
@@ -265,7 +261,7 @@
     <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
         <!-- Lights Table -->
         <table class="
-
+ir
         w-full text-sm text-left text-gray-500 dark:text-gray-400" id="tbl-lights">
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
             <tr>
@@ -295,7 +291,7 @@
                     Indicators
                 </th>
                 <td class="px-6 text-3xl py-4" id="lights-indicators">
-                    <span class="off-left">⚫</span><span class="on-left">🟠</span><span class="off-right">⚫</span><span class="on-right">🟠</span>
+                    <span class="off-left">⚫</span><span class="indicators-animate"><span class="on-left">🟠</span><span class="on-right">🟠</span></span><span class="off-right">⚫</span>
                 </td>
                 <td></td>
             </tr>
