@@ -13,6 +13,6 @@ typedef enum{
 	TIME_OUT_
 }ULTRASONIC_READ;
 
-ULTRASONIC_READ Ultrasonic_getdistance(transmission_en  transmission_Ultra,uint16_t* DISTANCE);
+void Ultrasonic_getdistance(transmission_en  transmission_Ultra);
 
 #endif //ULTRASONIC_INTERFACE_H_
