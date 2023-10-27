@@ -10,7 +10,7 @@ static Flag_enteringFun=0;
 static uint8_t ULTRASONIC_FLAG;
 uint16_t distance;
 extern transmission_en  gl_transmission_en;
-
+ULTRASONIC_READ Ultrasonic_status;
 void delay_us (uint16_t us)
 {
 	__HAL_TIM_SET_COUNTER(&htim1,0);  // set the counter value a 0
@@ -67,6 +67,7 @@ void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
         }
     distance=DIFFERNCE* 0.034/2;
     ULTRASONIC_FLAG=0;   
+    Ultrasonic_status=Sucess_
     }
 
 
@@ -88,7 +89,8 @@ void Ultrasonic_getdistance(transmission_en  transmission_Ultra){
 	static Flag_enteringFun=0;
 	 Flag_enteringFun++;
 	if(Flag_enteringFun>1&&ULTRASONIC_FLAG==1){
-          ULTRASONIC_FLAG=0;	
+          ULTRASONIC_FLAG=0;
+		
 	}
 	else{
 	Flag_enteringFun=0;	
@@ -116,6 +118,11 @@ uint16_t  Ultrasonc_getdistace(void){
 
 return  distance;
 
+}
+
+ULTRASONIC_READ Ultrasonc_getstate(void){
+
+return Ultrasonic_status;
 }
 
 
