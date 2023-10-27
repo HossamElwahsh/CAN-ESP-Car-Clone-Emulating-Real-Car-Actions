@@ -250,7 +250,7 @@
     </div>
 
 
-    <input id="large-range" type="range" value="0" min="-2" max="2" step="1" class="mt-5 w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg dark:bg-gray-700">
+    <input id="large-range" type="range" value="0" min="-2" max="2" step="1" class="mt-5 w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer range-lg dark:bg-gray-700" disabled>
     <label for="large-range" id="steering-hint" class="block mb-2 text-lg text-center font-medium text-gray-900 dark:text-white">Steering: Straight</label>
 
 </div>
@@ -330,28 +330,40 @@
     const steeringInput = document.getElementById("large-range");
     const steeringHint = document.getElementById("steering-hint");
 
-    steeringInput.addEventListener("change", (e) => {
 
-        switch (e.target.value)
+    function updateSteering(value)
+    {
+
+        switch (value)
         {
             case "-2":
+            case -2:
                 steeringHint.innerHTML = "Steering: Sharp Left";
                 break;
             case "-1":
+            case -1:
                 steeringHint.innerHTML = "Steering: Left";
                 break;
             case "0":
+            case 0:
                 steeringHint.innerHTML = "Steering: Straight";
                 break;
             case "1":
+            case 1:
                 steeringHint.innerHTML = "Steering: Right";
                 break;
             case "2":
+            case 2:
                 steeringHint.innerHTML = "Steering: Sharp Right";
                 break;
         }
+    }
 
+    steeringInput.addEventListener("change", (e) => {
+
+        updateSteering(e.target.value)
     });
+
 </script>
 
 </body>
