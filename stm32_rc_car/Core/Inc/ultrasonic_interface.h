@@ -14,5 +14,7 @@ typedef enum{
 }ULTRASONIC_READ;
 
 void Ultrasonic_getdistance(transmission_en  transmission_Ultra);
+uint16_t  Ultrasonc_getdistace(void);
+ULTRASONIC_READ Ultrasonc_getstate(void);
 
 #endif //ULTRASONIC_INTERFACE_H_
