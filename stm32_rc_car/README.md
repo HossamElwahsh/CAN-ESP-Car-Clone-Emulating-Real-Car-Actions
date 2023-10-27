@@ -24,5 +24,5 @@
   		configASSERT( ucCurrentPriority >= ucMaxSysCallPriority );
 ---
 ## 2. DC Motors doesn't run on PWM duty less than 70%
-- At duty cycle less than 70% the average DC voltage is less than the required to kickstart and run the motors, therefore you'll have to map all the PWM duties to more than or equal 70% for the motors to run.
+- At duty cycle less than 70% the average DC voltage is less than the required to kickstart and run the motors this is due to the non-linearity of the L298n motor driver chip, therefore you'll have to map all the PWM duties to more than or equal 70% for the motors to run.
 ----
