@@ -4,56 +4,81 @@
 
 
 extern transmission_en  gl_transmission_en;
-extern SemaphoreHandle_t Semaphore_Ultrasonic;
-ULTRASONIC_PASS Pass_Signal=Green_Flag;
+ULTRASONIC_PASS Pass_Signal;
+static ULTRASONIC_Status Status=Time_Out_;
+extern TaskHandle_t Ultrasonic_Timeout_Handel;
+extern TaskHandle_t Ultra_Handel;
 void Ultrasonic_Task (void*pvParameter )
-{
- transmission_en  transmission_Ultra;
- uint16_t  DISTANCE;    
+    {
 
-   vTaskSuspend(NULL);
-  for(;;)
-  {
-	   transmission_Ultra=gl_transmission_en;
-	   if(Ultrasonic_getdistance(transmission_Ultra,& DISTANCE)==SUCCESS_){
-	
-		 	  if(DISTANCE<CRACH_DISTANCE){
+	  vTaskSuspend(NULL);
+	  vTaskResume( Ultrasonic_Timeout_Handel);
 
-		 		  Pass_Signal= Red_Flag;
-		 	  }
-		 	 else{
-		 		  Pass_Signal= Green_Flag;
-		 	  }
-	   }
-	   else{
-		   Pass_Signal= Green_Flag;
-	   }
+        for(;;)
+        {
+            if(gl_transmission_en==Drive)
+            {
+                set_Ultrasonic_num(ULTRASONIC1);
+            }
+            else
+            {
+            	set_Ultrasonic_num(ULTRASONIC2);
+            }
+            Ultrasonic_Updatedistance();
+            if(Status==Success_)
+            {
+                if(Ultrasonc_getdistace()<CRACH_DISTANCE )
+                {
+                    Pass_Signal= Red_Flag;
+                }
+                else
+                {
+                    Pass_Signal= Green_Flag;
+                }
+            }
+            else if( Status== Time_Out_)
+            {
+                Pass_Signal= Green_Flag;
+            }
 
-	  osDelay(250);
-  }
-}
+            osDelay(250);
+        }
+    }
 
-/*
-void Ultrasonictest_Task(void*pvParameter){
-	for(;;){
-if(gl_transmission_en==Drive||gl_transmission_en==Reverse)	{
-xSemaphoreGive(Semaphore_Ultrasonic);
-}
-osDelay(100);
 
-	}
-}
-/* USER CODE END Header_StartDefaultTask */
 
-/* Test_Ultrasonic_code
+ void Ultrasonic_Timeout_Task(void*pvParameter)
+    {
+        vTaskSuspend(NULL);
+        static uint8_t enetrfunc_count=0;
+        ULTRASONIC_STAGE statge;
+        for(;;)
+        {
+        	if(enetrfunc_count==0){
+        	enetrfunc_count++;
+               }
+        	else if(enetrfunc_count==1)
+            {
 
- * void Ultrasonictest_Task(void*pvParameter){
-	for(;;){
-if(gl_transmission_en==Drive||gl_transmission_en==Reverse)	{
-xSemaphoreGive(Semaphore_Ultrasonic);
-}
-osDelay(100);
-}
+                statge=Ultrasonc_getstatge();
+                if(statge==Half_way_operation)
+                {
+                    Status= Time_Out_; //time_out cause the ultrasonic took more than 20ms that means the car doesn't detect any obstacle within 4 meter range
+                    Ultrasonic_Int_Timeout( gl_transmission_en);
 
-}
-*/
+                }
+                else if (statge==Complete_operation)
+                {
+
+                    Status= Success_;
+
+                }
+                enetrfunc_count=0;
+                vTaskSuspend(NULL);
+            }
+            osDelay(20);
+        }
+
+    }
+
+
