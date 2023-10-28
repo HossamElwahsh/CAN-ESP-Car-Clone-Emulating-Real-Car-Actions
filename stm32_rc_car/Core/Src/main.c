@@ -56,8 +56,7 @@
 
 /* NADA BEGIN */
 TaskHandle_t Ultra_Handle = NULL;
-TaskHandle_t Ultratest_Handel = NULL;
-SemaphoreHandle_t Semaphore_Ultrasonic;
+TaskHandle_t Ultrasonic_Timeout_Handel= NULL;
 /* NADA END */
 
 /*NORHAN BEGIN*/
@@ -740,14 +739,13 @@ int main(void)
                  2,/* Priority at which the task is created. */
                  &Ultra_Handle);      /* Used to pass out the created task's handle. */
 
-                 /* todo remove @nada */
-//  xTaskCreate(
-//		     Ultrasonictest_Task,       /* Function that implements the task. */
-//                 "Ultrasonic_test",          /* Text name for the task. */
-//                  250,      /* Stack size in words, not bytes. */
-//                  ( void * ) NULL,    /* Parameter passed into the task. */
-//                  1,/* Priority at which the task is created. */
-//                  &Ultratest_Handel);      /* Used to pass out the created task's handle. */
+  xTaskCreate(
+		Ultrasonic_Timeout_Task,       /* Function that implements the task. */
+                 "Ultrasonic_Timeout",          /* Text name for the task. */
+                  128,      /* Stack size in words, not bytes. */
+                  ( void * ) NULL,    /* Parameter passed into the task. */
+                  1,/* Priority at which the task is created. */
+                  &Ultrasonic_Timeout_Handel);
 
 
 
