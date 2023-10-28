@@ -5,16 +5,21 @@
 #include "ultrasonic_confg.h"
 #include "app_interface.h"
 
-#define time_out      2000000U
+typedef enum{
+Half_way_operation,
+Complete_operation=9,
+}ULTRASONIC_STAGE;
+
 
 typedef enum{
-	
-	SUCCESS_=9,
-	TIME_OUT_
-}ULTRASONIC_READ;
 
-void Ultrasonic_getdistance(transmission_en  transmission_Ultra);
+ULTRASONIC1=12,
+ULTRASONIC2
+}ULTRASONIC_NUM;
+
+void Ultrasonic_Updatedistance();
 uint16_t  Ultrasonc_getdistace(void);
-ULTRASONIC_READ Ultrasonc_getstate(void);
-
+ULTRASONIC_STAGE Ultrasonc_getstatge(void);
+void set_Ultrasonic_num(ULTRASONIC_NUM Num);
+void Ultrasonic_Int_Timeout(ULTRASONIC_NUM Number_ultra); //call it when the timeout happen to reset the Ultrasonic to its initial state
 #endif //ULTRASONIC_INTERFACE_H_
