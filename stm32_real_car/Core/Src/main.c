@@ -97,16 +97,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     /* Queue can data for processing */
     xQueueSendToBackFromISR(canProcessQueue, &st_can_queued_item, &xHigherPriorityTaskWoken);
 
-//	/* give transmit request semaphore */
-//	xSemaphoreGiveFromISR(uartTransmitRequestSemaphore, NULL);
-
 }
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-	volatile boolean sent = TRUE;
-}
-
 
 /* Inline helping function(s) */
 static inline uint8_t app_calc_throttle_power_percentage(uint16_t u16_a_throttle_reading)
@@ -612,7 +603,7 @@ void task_uart_tx_data(void * pvParameters)
         xQueueReceive(uartTransmitQueue, &app_uart_queue_item, portMAX_DELAY);
 
         /* transmit over uart */
-        uartTxStatus = HAL_UART_Transmit(&huart3, &app_uart_queue_item, 1, 500);
+        uartTxStatus = HAL_UART_Transmit(&huart3, &app_uart_queue_item, 1, APP_UART_TX_TIMEOUT_MS);
 
         if(HAL_OK == uartTxStatus)
         {
@@ -622,6 +613,8 @@ void task_uart_tx_data(void * pvParameters)
         else
         {
             /* Do Nothing */
+            /* Re-queue to front of queue */
+            xQueueSendToFront(uartTransmitQueue, &app_uart_queue_item, portMAX_DELAY);
         }
     }
 }
@@ -706,9 +699,9 @@ void task_process_can_data(void * pvParameters)
 					if(un_l_lights_conv.st_lights_bits.u32_brake_lights_bit)
 					{
 						/* brake lights state changed - toggle last state */
-						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_break_lights);
+						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_brake_lights);
 
-                        if(TRUE == st_gs_last_data_state.st_lighting_state.bool_break_lights)
+                        if(TRUE == st_gs_last_data_state.st_lighting_state.bool_brake_lights)
                         {
                             st_gs_last_data_state.u8_throttle_val = GENERATE_ESP_FRAME(APP_ESP_HEADER_THROTTLE, APP_ESP_DATA_THROTTLE_STOP_MAP_VAL);
                         }
@@ -718,7 +711,7 @@ void task_process_can_data(void * pvParameters)
                         }
 
 						/* queue to ESP */
-						u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_break_lights);
+						u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_brake_lights);
 
                         xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
 					}
@@ -733,11 +726,20 @@ void task_process_can_data(void * pvParameters)
 					}
 					if(un_l_lights_conv.st_lights_bits.u32_right_indicator_bit)
 					{
-						/* brake lights state changed - toggle last state */
-						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+						/* brake lights state changed - update last state */
+                        st_gs_last_data_state.st_lighting_state.bool_brake_lights = st_l_uart_queue_item.un_data_converter.u8_lighting_bits.u32_brake_lights_bit;
 
                         /* queue to ESP */
                         u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_R_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+                        xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
+                    }
+					if(un_l_lights_conv.st_lights_bits.u32_front_light_bit)
+					{
+						/* front lights state changed - update last state */
+						st_gs_last_data_state.st_lighting_state.bool_front_lights = st_l_uart_queue_item.un_data_converter.u8_lighting_bits.u32_front_light_bit;
+
+                        /* queue to ESP */
+                        u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_FRONT, st_gs_last_data_state.st_lighting_state.bool_front_lights);
                         xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
                     }
 

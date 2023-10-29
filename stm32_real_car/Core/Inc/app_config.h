@@ -111,6 +111,7 @@
 /* UART OPTIONS */
 #define APP_CAN_PROCESS_QUEUE_LENGTH	    (50)
 #define APP_UART_TX_QUEUE_LENGTH            (50)
+#define APP_UART_TX_TIMEOUT_MS              (500)
 
 /* RTOS OPTIONS */
 #define APP_RTOS_TASK_STACK_SIZE	        (200)

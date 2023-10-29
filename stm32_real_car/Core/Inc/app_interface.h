@@ -12,7 +12,7 @@
 
 typedef struct
 {
-	BOOLEAN bool_break_lights		:	SIZE_ONE_BIT;
+	BOOLEAN bool_brake_lights		:	SIZE_ONE_BIT;
 	BOOLEAN bool_front_lights		:	SIZE_ONE_BIT;
 	BOOLEAN bool_reverse_lights		:	SIZE_ONE_BIT;
 	BOOLEAN bool_left_indicator		:	SIZE_ONE_BIT;
@@ -72,7 +72,7 @@ typedef struct
 	uint32_t u32_unused_bit3:1;
 	uint32_t u32_unused_bit4:1;
 	uint32_t u32_unused_bit5:1;
-	uint32_t u32_unused_bit6:1;
+	uint32_t u32_front_light_bit:1;
 	uint32_t u32_unused_bit7:1;
 
 	/* byte 2 */
