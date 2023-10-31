@@ -35,39 +35,39 @@ typedef struct
 
 /**
  * @brief  moves the motor forward.
- * @param  motor: pointer to the motor configuration structure.
+ * @param  motor_config: pointer to the motor configuration structure.
  * @retval None
  */
 void DCM_MoveForward(st_dcm_config_t *motor_config);
 
 /**
  * @brief  moves the car to the right in the forward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveRightForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
 
 /**
  * @brief  moves the car to the left in the forward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveLeftForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
 
 /**
  * @brief  moves the car to the right sharply in the forward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveRightSharpForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
 
 /**
  * @brief  moves the car to the left sharply in the forward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveLeftSharpForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
@@ -75,39 +75,39 @@ void DCM_MoveLeftSharpForward(st_dcm_config_t *motor_left_config, st_dcm_config_
 /* DCM Backward Functions ----------------------------------------------------*/
 /**
  * @brief  moves the motor backward.
- * @param  motor: pointer to the motor configuration structure.
+ * @param  motor_config: pointer to the motor configuration structure.
  * @retval None
  */
 void DCM_MoveBackward(st_dcm_config_t *motor_config);
 
 /**
  * @brief  moves the car to the right in the backward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveRightBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
 
 /**
  * @brief  moves the car to the left in the backward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveLeftBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
 
 /**
  * @brief  moves the car to the right sharply in the backward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveRightSharpBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
 
 /**
  * @brief  moves the car to the left sharply in the backward direction.
- * @param  motor_left: pointer to the left motor configuration structure.
- * @param  motor_right: pointer to the right motor configuration structure.
+ * @param  motor_left_config: pointer to the left motor configuration structure.
+ * @param  motor_right_config: pointer to the right motor configuration structure.
  * @retval None
  */
 void DCM_MoveLeftSharpBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config);
@@ -115,7 +115,7 @@ void DCM_MoveLeftSharpBackward(st_dcm_config_t *motor_left_config, st_dcm_config
 /* Other DCM Functions -------------------------------------------------------*/
 /**
  * @brief  sets the speed of the motor.
- * @param  motor: pointer to the motor configuration structure.
+ * @param  motor_config: pointer to the motor configuration structure.
  * @param  speed: desired speed of the motor.
  *    	    	  This parameter can be one of the following values:
  *                @arg SPEED_ZERO: speed is zero.
@@ -129,7 +129,7 @@ void DCM_SetSpeed(st_dcm_config_t *motor_config, uint8_t speed);
 
 /**
  * @brief  stops the motor.
- * @param  motor: pointer to the motor configuration structure.
+ * @param  motor_config: pointer to the motor configuration structure.
  * @retval None
  */
 void DCM_Stop(st_dcm_config_t *motor_config);
