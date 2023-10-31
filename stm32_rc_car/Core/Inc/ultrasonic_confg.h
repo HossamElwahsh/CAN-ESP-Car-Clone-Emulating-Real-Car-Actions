@@ -9,5 +9,5 @@
 #define    TRIGER_BACKWARD_PORT  GPIOB
 #define    TRIGER_FORWARD_PIN   GPIO_PIN_0
 #define    TRIGER_BACKWARD_PIN  GPIO_PIN_1
-#define    CRACH_DISTANCE       25
+#define    CRACH_DISTANCE       15
 #endif //ULTRASONIC_CONFG_H_

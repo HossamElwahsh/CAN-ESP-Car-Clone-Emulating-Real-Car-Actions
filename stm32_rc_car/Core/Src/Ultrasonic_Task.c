@@ -9,7 +9,7 @@ static ULTRASONIC_Status Status=Time_Out_;
 extern TaskHandle_t Ultrasonic_Timeout_Handel;
 extern uint8_t gl_u8_throttle ;
 extern SemaphoreHandle_t semaphore_transmissionHandle;
-
+extern	SemaphoreHandle_t semaphore_OLEDHandle;
 void Ultrasonic_Task (void*pvParameter )
     {
 
@@ -34,9 +34,10 @@ void Ultrasonic_Task (void*pvParameter )
             {
                 if(Ultrasonc_getdistace()<CRACH_DISTANCE )
                 {
-                    Pass_Signal = Red_Flag;
-                    gl_u8_throttle = 0;
-                    xSemaphoreGive(semaphore_transmissionHandle);
+                    Pass_Signal= Red_Flag;
+                     gl_u8_throttle = 0;
+                     xSemaphoreGive(semaphore_transmissionHandle);
+                     xSemaphoreGive(semaphore_OLEDHandle);
                 }
                 else
                 {
@@ -48,7 +49,7 @@ void Ultrasonic_Task (void*pvParameter )
                 Pass_Signal= Green_Flag;
             }
 
-            osDelay(250);
+            osDelay(350);
         }
     }
 

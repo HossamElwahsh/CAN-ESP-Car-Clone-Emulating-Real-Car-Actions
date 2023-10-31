@@ -21,11 +21,12 @@ void Ultrasonic_Int_Timeout() // Call it when The timeout happen
         if(Number_ultrasonic ==ULTRASONIC1)
         {
             TIM_SET_CAPTUREPOLARITY(&htim1, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
-
+            __HAL_TIM_DISABLE_IT(&htim1,TIM_IT_CC1);
         }
         else if(Number_ultrasonic ==ULTRASONIC2)
         {
             TIM_SET_CAPTUREPOLARITY(&htim1, TIM_CHANNEL_4, TIM_INPUTCHANNELPOLARITY_RISING);
+            __HAL_TIM_DISABLE_IT(&htim1,TIM_IT_CC4);
         }
         ULTRASONIC_FLAG=0;
     }

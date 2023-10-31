@@ -292,6 +292,7 @@ void task_uart_processing(void * pvParameters)
           		  	  default:
           		  		  break;
             }
+          		  break;
 
         	  case Red_Flag:
         		  gl_u8_throttle = SPEED_ZERO;
@@ -559,23 +560,19 @@ void LightingSystem(void * pvParameter)
             }
             else if (LedToPowerOn == left_indicators_off)
             {
-                Left_led_flag = OFF;
-                vTaskResume(LED_Blink_Handle);
+            	HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, GPIO_PIN_RESET);
             }
             else if (LedToPowerOn == left_indicators_on)
             {
-                Left_led_flag = ON;
-                vTaskResume(LED_Blink_Handle);
+            	HAL_GPIO_WritePin(LED_LEFT_GPIO_Port, LED_LEFT_Pin, GPIO_PIN_SET);
             }
             else if (LedToPowerOn == right_indicators_off)
             {
-                Right_led_flag = OFF;
-                vTaskResume(LED_Blink_Handle);
+            	HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, GPIO_PIN_RESET);
             }
             else if (LedToPowerOn == right_indicators_on)
             {
-                Right_led_flag = ON;
-                vTaskResume(LED_Blink_Handle);
+            	HAL_GPIO_WritePin(LED_RIGHT_GPIO_Port, LED_RIGHT_Pin, GPIO_PIN_SET);
             }
 
 
@@ -919,9 +916,6 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 250);
-  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
   /* USER CODE BEGIN RTOS_THREADS */
     /* add threads, ... */
 
@@ -1339,6 +1333,13 @@ void OLED_Function(void * pvParameters) {
         default:
         	break;
         }
+        SSD1306_GotoXY(10, 25);
+
+
+        itoa (Ultrasonc_getdistace(),string_buffer,10);
+        SSD1306_Puts(string_buffer, &Font_11x18, 1);
+
+
         SSD1306_UpdateScreen(); // update screen
         vTaskDelay(1000);
     }
@@ -1346,73 +1347,6 @@ void OLED_Function(void * pvParameters) {
 }
 
 /* USER CODE END 4 */
-
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-  /* USER CODE BEGIN 5 */
-	char string_buffer[5]={0};
-    /* Infinite loop */
-    for (;;) {
-        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
-        SSD1306_Clear();
-        SSD1306_GotoXY(10, 10); // goto 10, 10
-/*        SSD1306_Puts("Current mode: ", &Font_7x10, 1);*/
-
-        if (gl_transmission_en == Neutral) {
-            //SSD1306_GotoXY(40, 25);
-            SSD1306_Puts("N", &Font_11x18, 1);
-        } else if (gl_transmission_en == Parking) {
-            //SSD1306_GotoXY(55, 25);
-            SSD1306_Puts("P", &Font_11x18, 1);
-        } else if (gl_transmission_en == Drive) {
-            //SSD1306_GotoXY(10, 25);
-            SSD1306_Puts("D", &Font_11x18, 1);
-        } else if (gl_transmission_en == Reverse) {
-           // SSD1306_GotoXY(25, 25);
-            SSD1306_Puts("R", &Font_11x18, 1);
-        } else {
-            /*		DO NOTHING		*/
-        }
-        SSD1306_GotoXY(25, 10);
-        //SSD1306_Puts("Current Speed:", &Font_7x10, 1);
-       // SSD1306_GotoXY(45, 50);
-        itoa (gl_u8_throttle,string_buffer,10);
-        SSD1306_Puts(string_buffer, &Font_11x18, 1);
-
-        SSD1306_GotoXY(50, 10);
-        switch(gl_steering_en)
-        {
-        case Straight:
-        	SSD1306_Puts("ST", &Font_11x18, 1);
-        	break;
-        case right:
-                	SSD1306_Puts("R", &Font_11x18, 1);
-                	break;
-        case sharp_right:
-                	SSD1306_Puts("SR", &Font_11x18, 1);
-                	break;
-        case left:
-                	SSD1306_Puts("L", &Font_11x18, 1);
-                	break;
-        case sharp_left:
-                	SSD1306_Puts("SL", &Font_11x18, 1);
-                	break;
-
-        default:
-        	break;
-        }
-        SSD1306_UpdateScreen(); // update screen
-        vTaskDelay(1000);
-    }
-  /* USER CODE END 5 */
-}
 
 /**
   * @brief  Period elapsed callback in non blocking mode
