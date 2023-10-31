@@ -904,6 +904,8 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 250);
+  defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
     /* add threads, ... */
@@ -1233,7 +1235,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, MOTOR_IN_1_RIGHT_Pin|MOTOR_IN_2_RIGHT_Pin|MOTOR_IN_3_LEFT_Pin|MOTOR_IN_4_LEFT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, US_TRIGGER_1_Drive_Pin|US_TRIGGER_2_BACK_Pin|LED_REVERSE_Pin|LED_FRONT_Pin
+  HAL_GPIO_WritePin(GPIOB, US_TRIGGER_1_DRIVE_Pin|US_TRIGGER_2_BACK_Pin|LED_REVERSE_Pin|LED_FRONT_Pin
                           |LED_RIGHT_Pin|LED_LEFT_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : LED_BRAKES_Pin */
@@ -1250,9 +1252,9 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : US_TRIGGER_1_Drive_Pin US_TRIGGER_2_BACK_Pin LED_REVERSE_Pin LED_FRONT_Pin
+  /*Configure GPIO pins : US_TRIGGER_1_DRIVE_Pin US_TRIGGER_2_BACK_Pin LED_REVERSE_Pin LED_FRONT_Pin
                            LED_RIGHT_Pin LED_LEFT_Pin */
-  GPIO_InitStruct.Pin = US_TRIGGER_1_Drive_Pin|US_TRIGGER_2_BACK_Pin|LED_REVERSE_Pin|LED_FRONT_Pin
+  GPIO_InitStruct.Pin = US_TRIGGER_1_DRIVE_Pin|US_TRIGGER_2_BACK_Pin|LED_REVERSE_Pin|LED_FRONT_Pin
                           |LED_RIGHT_Pin|LED_LEFT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -1337,6 +1339,65 @@ void OLED_Function(void * pvParameters) {
   * @retval None
   */
 /* USER CODE END Header_StartDefaultTask */
+void StartDefaultTask(void const * argument)
+{
+  /* USER CODE BEGIN 5 */
+	char string_buffer[5]={0};
+    /* Infinite loop */
+    for (;;) {
+        xSemaphoreTake(semaphore_OLEDHandle, portMAX_DELAY);
+        SSD1306_Clear();
+        SSD1306_GotoXY(10, 10); // goto 10, 10
+/*        SSD1306_Puts("Current mode: ", &Font_7x10, 1);*/
+
+        if (gl_transmission_en == Neutral) {
+            //SSD1306_GotoXY(40, 25);
+            SSD1306_Puts("N", &Font_11x18, 1);
+        } else if (gl_transmission_en == Parking) {
+            //SSD1306_GotoXY(55, 25);
+            SSD1306_Puts("P", &Font_11x18, 1);
+        } else if (gl_transmission_en == Drive) {
+            //SSD1306_GotoXY(10, 25);
+            SSD1306_Puts("D", &Font_11x18, 1);
+        } else if (gl_transmission_en == Reverse) {
+           // SSD1306_GotoXY(25, 25);
+            SSD1306_Puts("R", &Font_11x18, 1);
+        } else {
+            /*		DO NOTHING		*/
+        }
+        SSD1306_GotoXY(25, 10);
+        //SSD1306_Puts("Current Speed:", &Font_7x10, 1);
+       // SSD1306_GotoXY(45, 50);
+        itoa (gl_u8_throttle,string_buffer,10);
+        SSD1306_Puts(string_buffer, &Font_11x18, 1);
+
+        SSD1306_GotoXY(50, 10);
+        switch(gl_steering_en)
+        {
+        case Straight:
+        	SSD1306_Puts("ST", &Font_11x18, 1);
+        	break;
+        case right:
+                	SSD1306_Puts("R", &Font_11x18, 1);
+                	break;
+        case sharp_right:
+                	SSD1306_Puts("SR", &Font_11x18, 1);
+                	break;
+        case left:
+                	SSD1306_Puts("L", &Font_11x18, 1);
+                	break;
+        case sharp_left:
+                	SSD1306_Puts("SL", &Font_11x18, 1);
+                	break;
+
+        default:
+        	break;
+        }
+        SSD1306_UpdateScreen(); // update screen
+        vTaskDelay(1000);
+    }
+  /* USER CODE END 5 */
+}
 
 /**
   * @brief  Period elapsed callback in non blocking mode

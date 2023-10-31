@@ -10,8 +10,8 @@
 #include "DCM_RTOS.h"
 
 /* Private variables ---------------------------------------------------------*/
-st_dcm_config_t DCM_Left = {DCM_LEFT_PORT, DCM_LEFT_IN1, DCM_LEFT_IN2, &htim3, TIM_CHANNEL_2};
-st_dcm_config_t DCM_Right = {DCM_RIGHT_PORT, DCM_RIGHT_IN1, DCM_RIGHT_IN2, &htim3, TIM_CHANNEL_1};
+st_dcm_config_t DCM_Left_config = {DCM_LEFT_PORT, DCM_LEFT_IN1, DCM_LEFT_IN2, &htim3, TIM_CHANNEL_2};
+st_dcm_config_t DCM_Right_config = {DCM_RIGHT_PORT, DCM_RIGHT_IN1, DCM_RIGHT_IN2, &htim3, TIM_CHANNEL_1};
 
 /* Private function prototypes -----------------------------------------------*/
 static void DCM_CheckSpeed(uint8_t a_throttle_position);
@@ -36,32 +36,32 @@ static void DCM_CheckSpeed(uint8_t a_throttle_position)
     {
         case SPEED_ZERO:
         {
-            DCM_SetSpeed(&DCM_Left, SPEED_ZERO);
-            DCM_SetSpeed(&DCM_Right, SPEED_ZERO);
+            DCM_SetSpeed(&DCM_Left_config, SPEED_ZERO);
+            DCM_SetSpeed(&DCM_Right_config, SPEED_ZERO);
             break;
         }
         case SPEED_MIN:
         {
-            DCM_SetSpeed(&DCM_Left, SPEED_MIN);
-            DCM_SetSpeed(&DCM_Right, SPEED_MIN);
+            DCM_SetSpeed(&DCM_Left_config, SPEED_MIN);
+            DCM_SetSpeed(&DCM_Right_config, SPEED_MIN);
             break;
         }
         case SPEED_MED:
         {
-            DCM_SetSpeed(&DCM_Left, SPEED_MED);
-            DCM_SetSpeed(&DCM_Right, SPEED_MED);
+            DCM_SetSpeed(&DCM_Left_config, SPEED_MED);
+            DCM_SetSpeed(&DCM_Right_config, SPEED_MED);
             break;
         }
         case SPEED_HIGH:
         {
-            DCM_SetSpeed(&DCM_Left, SPEED_HIGH);
-            DCM_SetSpeed(&DCM_Right, SPEED_HIGH);
+            DCM_SetSpeed(&DCM_Left_config, SPEED_HIGH);
+            DCM_SetSpeed(&DCM_Right_config, SPEED_HIGH);
             break;
         }
         case SPEED_MAX:
         {
-            DCM_SetSpeed(&DCM_Left, SPEED_MAX);
-            DCM_SetSpeed(&DCM_Right, SPEED_MAX);
+            DCM_SetSpeed(&DCM_Left_config, SPEED_MAX);
+            DCM_SetSpeed(&DCM_Right_config, SPEED_MAX);
             break;
         }
         default:
@@ -89,28 +89,28 @@ static void DCM_CheckSteeringForward(uint8_t a_steering_position)
     {
         case STEERING_STRAIGHT:
         {
-            DCM_MoveForward(&DCM_Left);
-            DCM_MoveForward(&DCM_Right);
+            DCM_MoveForward(&DCM_Left_config);
+            DCM_MoveForward(&DCM_Right_config);
             break;
         }
         case STEERING_RIGHT:
         {
-            DCM_MoveRightForward(&DCM_Left, &DCM_Right);
+            DCM_MoveRightForward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         case STEERING_LEFT:
         {
-            DCM_MoveLeftForward(&DCM_Left, &DCM_Right);
+            DCM_MoveLeftForward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         case STEERING_SHARP_RIGHT:
         {
-            DCM_MoveRightSharpForward(&DCM_Left, &DCM_Right);
+            DCM_MoveRightSharpForward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         case STEERING_SHARP_LEFT:
         {
-            DCM_MoveLeftSharpForward(&DCM_Left, &DCM_Right);
+            DCM_MoveLeftSharpForward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         default:
@@ -138,28 +138,28 @@ static void DCM_CheckSteeringBackward(uint8_t a_steering_position)
     {
         case STEERING_STRAIGHT:
         {
-            DCM_MoveBackward(&DCM_Left);
-            DCM_MoveBackward(&DCM_Right);
+            DCM_MoveBackward(&DCM_Left_config);
+            DCM_MoveBackward(&DCM_Right_config);
             break;
         }
         case STEERING_RIGHT:
         {
-            DCM_MoveRightBackward(&DCM_Left, &DCM_Right);
+            DCM_MoveRightBackward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         case STEERING_LEFT:
         {
-            DCM_MoveLeftBackward(&DCM_Left, &DCM_Right);
+            DCM_MoveLeftBackward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         case STEERING_SHARP_RIGHT:
         {
-            DCM_MoveRightSharpBackward(&DCM_Left, &DCM_Right);
+            DCM_MoveRightSharpBackward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         case STEERING_SHARP_LEFT:
         {
-            DCM_MoveLeftSharpBackward(&DCM_Left, &DCM_Right);
+            DCM_MoveLeftSharpBackward(&DCM_Left_config, &DCM_Right_config);
             break;
         }
         default:
@@ -178,12 +178,6 @@ static void DCM_CheckSteeringBackward(uint8_t a_steering_position)
  */
 void Task_DCM(void *pvParameters)
 {
-    /* take semaphore once at init to clear it */
-   // xSemaphoreTake(GEAR_SEMAPHORE, portMAX_DELAY);
-    //xSemaphoreTake(STEERING_SEMAPHORE, portMAX_DELAY);
-
-
-	//uint8_t ayhaga;
     for (;;)
     {
 
@@ -200,14 +194,14 @@ void Task_DCM(void *pvParameters)
                 }
                 case GEAR_NEUTRAL:
                 {
-                    DCM_Stop(&DCM_Left);
-                    DCM_Stop(&DCM_Right);
+                    DCM_Stop(&DCM_Left_config);
+                    DCM_Stop(&DCM_Right_config);
                     break;
                 }
                 case GEAR_PARKING:
                 {
-                    DCM_Stop(&DCM_Left);
-                    DCM_Stop(&DCM_Right);
+                    DCM_Stop(&DCM_Left_config);
+                    DCM_Stop(&DCM_Right_config);
                     break;
                 }
                 case GEAR_REVERSE:

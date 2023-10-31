@@ -17,10 +17,10 @@
  * @param  motor: pointer to the motor configuration structure.
  * @retval None
  */
-void DCM_MoveForward(st_dcm_config_t *motor)
+void DCM_MoveForward(st_dcm_config_t *motor_config)
 {
-	HAL_GPIO_WritePin(motor->DCM_GPIOx, motor->DCM_IN1_GPIO_PIN_x, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(motor->DCM_GPIOx, motor->DCM_IN2_GPIO_PIN_x, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(motor_config->DCM_GPIOx, motor_config->DCM_IN1_GPIO_PIN_x, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(motor_config->DCM_GPIOx, motor_config->DCM_IN2_GPIO_PIN_x, GPIO_PIN_RESET);
 }
 
 /**
@@ -29,10 +29,10 @@ void DCM_MoveForward(st_dcm_config_t *motor)
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveRightForward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveRightForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveForward(motor_left);
-	DCM_Stop(motor_right);
+	DCM_MoveForward(motor_left_config);
+	DCM_Stop(motor_right_config);
 }
 
 /**
@@ -41,10 +41,10 @@ void DCM_MoveRightForward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_ri
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveLeftForward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveLeftForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveForward(motor_right);
-	DCM_Stop(motor_left);
+	DCM_MoveForward(motor_right_config);
+	DCM_Stop(motor_left_config);
 }
 
 /**
@@ -53,10 +53,10 @@ void DCM_MoveLeftForward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_rig
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveRightSharpForward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveRightSharpForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveForward(motor_left);
-	DCM_MoveBackward(motor_right);
+	DCM_MoveForward(motor_left_config);
+	DCM_MoveBackward(motor_right_config);
 }
 
 /**
@@ -65,10 +65,10 @@ void DCM_MoveRightSharpForward(st_dcm_config_t *motor_left, st_dcm_config_t *mot
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveLeftSharpForward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveLeftSharpForward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveForward(motor_right);
-	DCM_MoveBackward(motor_left);
+	DCM_MoveForward(motor_right_config);
+	DCM_MoveBackward(motor_left_config);
 }
 
 /* DCM Backward Functions ----------------------------------------------------*/
@@ -77,10 +77,10 @@ void DCM_MoveLeftSharpForward(st_dcm_config_t *motor_left, st_dcm_config_t *moto
  * @param  motor: pointer to the motor configuration structure.
  * @retval None
  */
-void DCM_MoveBackward(st_dcm_config_t *motor)
+void DCM_MoveBackward(st_dcm_config_t *motor_config)
 {
-	HAL_GPIO_WritePin(motor->DCM_GPIOx, motor->DCM_IN1_GPIO_PIN_x, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(motor->DCM_GPIOx, motor->DCM_IN2_GPIO_PIN_x, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(motor_config->DCM_GPIOx, motor_config->DCM_IN1_GPIO_PIN_x, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(motor_config->DCM_GPIOx, motor_config->DCM_IN2_GPIO_PIN_x, GPIO_PIN_SET);
 }
 
 /**
@@ -89,10 +89,10 @@ void DCM_MoveBackward(st_dcm_config_t *motor)
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveRightBackward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveRightBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveBackward(motor_left);
-	DCM_Stop(motor_right);
+	DCM_MoveBackward(motor_left_config);
+	DCM_Stop(motor_right_config);
 }
 
 /**
@@ -101,10 +101,10 @@ void DCM_MoveRightBackward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_r
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveLeftBackward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveLeftBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveBackward(motor_right);
-	DCM_Stop(motor_left);
+	DCM_MoveBackward(motor_right_config);
+	DCM_Stop(motor_left_config);
 }
 
 /**
@@ -113,10 +113,10 @@ void DCM_MoveLeftBackward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_ri
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveRightSharpBackward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveRightSharpBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveBackward(motor_left);
-	DCM_MoveForward(motor_right);
+	DCM_MoveBackward(motor_left_config);
+	DCM_MoveForward(motor_right_config);
 }
 
 /**
@@ -125,10 +125,10 @@ void DCM_MoveRightSharpBackward(st_dcm_config_t *motor_left, st_dcm_config_t *mo
  * @param  motor_right: pointer to the right motor configuration structure.
  * @retval None
  */
-void DCM_MoveLeftSharpBackward(st_dcm_config_t *motor_left, st_dcm_config_t *motor_right)
+void DCM_MoveLeftSharpBackward(st_dcm_config_t *motor_left_config, st_dcm_config_t *motor_right_config)
 {
-	DCM_MoveBackward(motor_right);
-	DCM_MoveForward(motor_left);
+	DCM_MoveBackward(motor_right_config);
+	DCM_MoveForward(motor_left_config);
 }
 
 /* Other DCM Functions -------------------------------------------------------*/
@@ -144,10 +144,10 @@ void DCM_MoveLeftSharpBackward(st_dcm_config_t *motor_left, st_dcm_config_t *mot
  *                @arg SPEED_MAX:  maximum speed.
  * @retval None
  */
-void DCM_SetSpeed(st_dcm_config_t *motor, uint8_t speed)
+void DCM_SetSpeed(st_dcm_config_t *motor_config, uint8_t speed)
 {
-	__HAL_TIM_SET_COMPARE((motor->DCM_htimx), motor->DCM_TIM_CHANNEL_x, speed);
-	HAL_TIM_PWM_Start(motor->DCM_htimx, motor->DCM_TIM_CHANNEL_x);
+	__HAL_TIM_SET_COMPARE((motor_config->DCM_htimx), motor_config->DCM_TIM_CHANNEL_x, speed);
+	HAL_TIM_PWM_Start(motor_config->DCM_htimx, motor_config->DCM_TIM_CHANNEL_x);
 }
 
 /**
@@ -155,8 +155,8 @@ void DCM_SetSpeed(st_dcm_config_t *motor, uint8_t speed)
  * @param  motor: pointer to the motor configuration structure.
  * @retval None
  */
-void DCM_Stop(st_dcm_config_t *motor)
+void DCM_Stop(st_dcm_config_t *motor_config)
 {
-	HAL_GPIO_WritePin(motor->DCM_GPIOx, motor->DCM_IN1_GPIO_PIN_x, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(motor->DCM_GPIOx, motor->DCM_IN2_GPIO_PIN_x, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(motor_config->DCM_GPIOx, motor_config->DCM_IN1_GPIO_PIN_x, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(motor_config->DCM_GPIOx, motor_config->DCM_IN2_GPIO_PIN_x, GPIO_PIN_RESET);
 }

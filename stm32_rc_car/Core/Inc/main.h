@@ -164,8 +164,8 @@ void Error_Handler(void);
 #define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
 #define MOTOR_EN_B_LEFT_Pin GPIO_PIN_7
 #define MOTOR_EN_B_LEFT_GPIO_Port GPIOA
-#define US_TRIGGER_1_Drive_Pin GPIO_PIN_0
-#define US_TRIGGER_1_Drive_GPIO_Port GPIOB
+#define US_TRIGGER_1_DRIVE_Pin GPIO_PIN_0
+#define US_TRIGGER_1_DRIVE_GPIO_Port GPIOB
 #define US_TRIGGER_2_BACK_Pin GPIO_PIN_1
 #define US_TRIGGER_2_BACK_GPIO_Port GPIOB
 #define LED_REVERSE_Pin GPIO_PIN_13
@@ -174,6 +174,10 @@ void Error_Handler(void);
 #define LED_FRONT_GPIO_Port GPIOB
 #define LED_RIGHT_Pin GPIO_PIN_15
 #define LED_RIGHT_GPIO_Port GPIOB
+#define US_ECHO_1_DRIVE_Pin GPIO_PIN_8
+#define US_ECHO_1_DRIVE_GPIO_Port GPIOA
+#define US_ECHO_2_BACK_Pin GPIO_PIN_11
+#define US_ECHO_2_BACK_GPIO_Port GPIOA
 #define LED_LEFT_Pin GPIO_PIN_9
 #define LED_LEFT_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
