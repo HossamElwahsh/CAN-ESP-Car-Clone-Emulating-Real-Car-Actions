@@ -727,7 +727,7 @@ void task_process_can_data(void * pvParameters)
 					if(un_l_lights_conv.st_lights_bits.u32_right_indicator_bit)
 					{
 						/* brake lights state changed - update last state */
-                        st_gs_last_data_state.st_lighting_state.bool_brake_lights = st_l_uart_queue_item.un_data_converter.u8_lighting_bits.u32_brake_lights_bit;
+                        st_gs_last_data_state.st_lighting_state.bool_right_indicator = st_l_uart_queue_item.un_data_converter.u8_lighting_bits.u32_right_indicator_bit;
 
                         /* queue to ESP */
                         u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_R_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
