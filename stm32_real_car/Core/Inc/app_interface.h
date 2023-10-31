@@ -71,12 +71,12 @@ typedef struct
 {
 	/* byte 1 */
 	uint32_t u32_unused_bit0:1;
-	uint32_t u32_unused_bit1:1;
+	uint32_t u32_front_light_bit:1;
 	uint32_t u32_unused_bit2:1;
 	uint32_t u32_unused_bit3:1;
 	uint32_t u32_unused_bit4:1;
 	uint32_t u32_unused_bit5:1;
-	uint32_t u32_front_light_bit:1;
+	uint32_t u32_unused_bit6:1;
 	uint32_t u32_unused_bit7:1;
 
 	/* byte 2 */
