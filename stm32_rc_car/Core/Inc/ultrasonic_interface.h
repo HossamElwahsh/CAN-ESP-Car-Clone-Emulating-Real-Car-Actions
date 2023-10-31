@@ -19,7 +19,7 @@ ULTRASONIC2
 
 void Ultrasonic_Updatedistance();
 uint16_t  Ultrasonc_getdistace(void);
-ULTRASONIC_STAGE Ultrasonc_getstatge(void);
+ULTRASONIC_STAGE Ultrasonc_getstage(void);
 void set_Ultrasonic_num(ULTRASONIC_NUM Num);
-void Ultrasonic_Int_Timeout(ULTRASONIC_NUM Number_ultra); //call it when the timeout happen to reset the Ultrasonic to its initial state
+void Ultrasonic_Int_Timeout(void); //call it when the timeout happen to reset the Ultrasonic to its initial state
 #endif //ULTRASONIC_INTERFACE_H_

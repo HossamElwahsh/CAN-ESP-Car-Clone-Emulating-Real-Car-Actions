@@ -3,8 +3,8 @@
 #include "Ultrasonic_Task.h"
 #include "stm32f1xx_hal.h"
  extern TIM_HandleTypeDef htim1;
- extern void delay_us(uint16_t time );
- static ULTRASONIC_STAGE Ultrasonic_statge;
+ extern void delay_us(uint16_t us );
+ static ULTRASONIC_STAGE Ultrasonic_stage;
  static ULTRASONIC_NUM Number_ultrasonic;
  static uint8_t ULTRASONIC_FLAG;
  static uint16_t distance;
@@ -16,14 +16,14 @@ void delay_us (uint16_t us)
     }
 
 
-void Ultrasonic_Int_Timeout(ULTRASONIC_NUM Number_ultra) // Call it when The timeout happen
+void Ultrasonic_Int_Timeout() // Call it when The timeout happen
     {
-        if(Number_ultra ==ULTRASONIC1)
+        if(Number_ultrasonic ==ULTRASONIC1)
         {
             TIM_SET_CAPTUREPOLARITY(&htim1, TIM_CHANNEL_1, TIM_INPUTCHANNELPOLARITY_RISING);
 
         }
-        else if(Number_ultra ==ULTRASONIC2)
+        else if(Number_ultrasonic ==ULTRASONIC2)
         {
             TIM_SET_CAPTUREPOLARITY(&htim1, TIM_CHANNEL_4, TIM_INPUTCHANNELPOLARITY_RISING);
         }
@@ -49,7 +49,7 @@ void Ultrasonic_Int_Timeout(ULTRASONIC_NUM Number_ultra) // Call it when The tim
                 __HAL_TIM_SET_CAPTUREPOLARITY(htim,TIM_CHANNEL_4,TIM_INPUTCHANNELPOLARITY_FALLING);
             }
             ULTRASONIC_FLAG=1;
-            Ultrasonic_statge=Half_way_operation;
+            Ultrasonic_stage=Half_way_operation;
         }
         else if(ULTRASONIC_FLAG==1)
         {
@@ -72,7 +72,7 @@ void Ultrasonic_Int_Timeout(ULTRASONIC_NUM Number_ultra) // Call it when The tim
 
 
             ULTRASONIC_FLAG=2;
-            Ultrasonic_statge=Complete_operation;
+            Ultrasonic_stage=Complete_operation;
         }
 
         if(ULTRASONIC_FLAG==2)
@@ -85,7 +85,7 @@ void Ultrasonic_Int_Timeout(ULTRASONIC_NUM Number_ultra) // Call it when The tim
             {
                 DIFFERNCE=(0xffff-TIM1_ULTRA)+TIM2_ULTRA;
             }
-            distance=DIFFERNCE* 0.034/2;
+            distance = DIFFERNCE* 0.034/2;
             ULTRASONIC_FLAG=0;
         }
 
@@ -134,10 +134,10 @@ uint16_t  Ultrasonc_getdistace(void)
 
     }
 
-ULTRASONIC_STAGE Ultrasonc_getstatge(void)
+ULTRASONIC_STAGE Ultrasonc_getstage(void)
     {
 
-        return Ultrasonic_statge;
+        return Ultrasonic_stage;
     }
 
 

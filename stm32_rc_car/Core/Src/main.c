@@ -270,7 +270,8 @@ void task_uart_processing(void * pvParameters)
         if (gl_transmission_en == Reverse || gl_transmission_en == Drive)
         {
 
-          switch(Pass_Signal){
+          switch(Pass_Signal)
+          {
           	  case Green_Flag:
           		  switch (received_byte){
           		  	  case throttle_0_percent:
@@ -524,12 +525,13 @@ void OLED_Function(void * pvParameters);
 /* SAKR END */
 
 /* NORHAN BEGIN */
-void LightingSystem(void * pvParameter) {
+void LightingSystem(void * pvParameter)
+{
     lights_en LedToPowerOn;
 
 
-    for (;;) {
-
+    for (;;)
+    {
         	xQueueReceive(Lights_Queue, &LedToPowerOn, portMAX_DELAY);
             if (LedToPowerOn == brake_lights_off)
             {
