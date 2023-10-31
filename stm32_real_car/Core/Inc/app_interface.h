@@ -10,6 +10,7 @@
 
 /* Typedefs */
 
+/* Struct for current lighting states */
 typedef struct
 {
 	BOOLEAN bool_brake_lights		:	SIZE_ONE_BIT;
@@ -22,6 +23,7 @@ typedef struct
 	BOOLEAN bool_reserved_3			:	SIZE_ONE_BIT;
 }st_lighting_state_t;
 
+/* Enums for car transmission states */
 typedef enum
 {
 	TRANSMISSION_STATE_NONE		=	ZERO	,
@@ -32,6 +34,7 @@ typedef enum
 	TRANSMISSION_STATE_TOTAL				,
 }en_transmission_state_t;
 
+/* Enum for different car steering mapped states */
 typedef enum
 {
 	STEERING_STATE_NONE			= APP_ESP_DATA_STEERING_NONE            ,
@@ -43,7 +46,7 @@ typedef enum
 	STEERING_STATE_TOTAL
 }en_steering_state_t;
 
-/* Saves last sent data states to prevent duplicate unnecessary sends */
+/* Struct stores last sent data states to prevent duplicated/unnecessary sends */
 typedef struct
 {
 	/* lighting value */
@@ -63,6 +66,7 @@ typedef struct
 
 }st_last_data_state_t;
 
+/* Struct bit by bit converter for lighting bytes sent by the CAR High Speed Can Bus */
 typedef struct
 {
 	/* byte 1 */
@@ -108,7 +112,7 @@ typedef struct
 }st_lighting_bits_t;
 
 
-/* Converter union for RxData */
+/* Converter union for CAN received data */
 typedef union
 {
 	uint8_t 	RxData[APP_RX_DATA_LENGTH]	;	// Receive buffer
@@ -118,6 +122,7 @@ typedef union
 	st_lighting_bits_t u8_lighting_bits		;
 }un_data_converter_t;
 
+/* struct for CAN queued item to be processed */
 typedef struct
 {
 	uint16_t 			item_id				;
