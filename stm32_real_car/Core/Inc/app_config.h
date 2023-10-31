@@ -80,24 +80,24 @@
 #define APP_ESP_DATA_STEERING_RIGHT			0x02
 
 /* - Throttle */
-/* - > STOPPED */
+/* - > STOPPED | 0 > 10 / 16k in real car */
 #define APP_ESP_DATA_THROTTLE_STOP_MIN      0x0000
-#define APP_ESP_DATA_THROTTLE_STOP_MAX      0x0CD2
+#define APP_ESP_DATA_THROTTLE_STOP_MAX      0x000A
 
-/* - > 70% */
-#define APP_ESP_DATA_THROTTLE_LEVEL_1_MIN   0x0CD3
-#define APP_ESP_DATA_THROTTLE_LEVEL_1_MAX   0x19A5
+/* - > 70% | 11 > 1k/16k in real car */
+#define APP_ESP_DATA_THROTTLE_LEVEL_1_MIN   0x000B
+#define APP_ESP_DATA_THROTTLE_LEVEL_1_MAX   0x03EB
 
-/* - > 80% */
-#define APP_ESP_DATA_THROTTLE_LEVEL_2_MIN   0x19A6
-#define APP_ESP_DATA_THROTTLE_LEVEL_2_MAX   0x2678
+/* - > 80% | 1k > 4k /16k in real car */
+#define APP_ESP_DATA_THROTTLE_LEVEL_2_MIN   0x03EC
+#define APP_ESP_DATA_THROTTLE_LEVEL_2_MAX   0x0FA0
 
-/* - > 90%% */
-#define APP_ESP_DATA_THROTTLE_LEVEL_3_MIN   0x2679
-#define APP_ESP_DATA_THROTTLE_LEVEL_3_MAX   0x334C
+/* - > 90%% | 4k > 12k in real car */
+#define APP_ESP_DATA_THROTTLE_LEVEL_3_MIN   0x0FA1
+#define APP_ESP_DATA_THROTTLE_LEVEL_3_MAX   0x2EE1
 
-/* - > 100% */
-#define APP_ESP_DATA_THROTTLE_LEVEL_4_MIN   0x334C
+/* - > 100% | 12 > 16k in real car */
+#define APP_ESP_DATA_THROTTLE_LEVEL_4_MIN   0x2EE2
 #define APP_ESP_DATA_THROTTLE_LEVEL_4_MAX   0x401F
 
 /* - Throttle mapping  */
