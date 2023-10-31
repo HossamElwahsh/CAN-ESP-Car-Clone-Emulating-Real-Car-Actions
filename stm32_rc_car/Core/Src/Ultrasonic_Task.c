@@ -8,14 +8,17 @@ ULTRASONIC_PASS Pass_Signal;
 static ULTRASONIC_Status Status=Time_Out_;
 extern TaskHandle_t Ultrasonic_Timeout_Handel;
 extern TaskHandle_t Ultra_Handel;
+extern uint8_t gl_u8_throttle ;
+extern SemaphoreHandle_t semaphore_transmissionHandle;
 void Ultrasonic_Task (void*pvParameter )
     {
 
 	  vTaskSuspend(NULL);
-	  vTaskResume( Ultrasonic_Timeout_Handel);
 
         for(;;)
         {
+        	 vTaskResume( Ultrasonic_Timeout_Handel);
+
             if(gl_transmission_en==Drive)
             {
                 set_Ultrasonic_num(ULTRASONIC1);
@@ -30,6 +33,9 @@ void Ultrasonic_Task (void*pvParameter )
                 if(Ultrasonc_getdistace()<CRACH_DISTANCE )
                 {
                     Pass_Signal= Red_Flag;
+                     gl_u8_throttle = 0;
+                     xSemaphoreGive(semaphore_transmissionHandle);
+
                 }
                 else
                 {
