@@ -269,26 +269,36 @@ void task_uart_processing(void * pvParameters)
         /* Throttle Readings */
         if (gl_transmission_en == Reverse || gl_transmission_en == Drive)
         {
-            switch (received_byte)
-            {
-                case throttle_0_percent:
-                    gl_u8_throttle = SPEED_ZERO;
-                    break;
-                case throttle_70_percent:
-                    gl_u8_throttle = SPEED_MIN;
-                    break;
-                case throttle_80_percent:
-                    gl_u8_throttle = SPEED_MED;
-                    break;
-                case throttle_90_percent:
-                    gl_u8_throttle = SPEED_HIGH;
-                    break;
-                case throttle_100_percent:
-                    gl_u8_throttle = SPEED_MAX;
-                    break;
-                default:
-                    break;
+
+          switch(Pass_Signal){
+          	  case Green_Flag:
+          		  switch (received_byte){
+          		  	  case throttle_0_percent:
+          		  		  gl_u8_throttle = SPEED_ZERO;
+          		  		  break;
+          		  	  case throttle_70_percent:
+          		  		  gl_u8_throttle = SPEED_MIN;
+          		  		  break;
+          		  	  case throttle_80_percent:
+          		  		  gl_u8_throttle = SPEED_MED;
+          		  		  break;
+          		  	  case throttle_90_percent:
+          		  		  gl_u8_throttle = SPEED_HIGH;
+          		  		  break;
+          		  	  case throttle_100_percent:
+          		  		  gl_u8_throttle = SPEED_MAX;
+          		  		  break;
+          		  	  default:
+          		  		  break;
             }
+
+        	  case Red_Flag:
+        		  gl_u8_throttle = SPEED_ZERO;
+        		  break;
+
+        	  default:
+        	      break;
+          }
 
             	xSemaphoreGive(semaphore_transmissionHandle);
         }
@@ -337,6 +347,9 @@ void task_uart_processing(void * pvParameters)
             {
                 gl_lights_en = brake_lights_off;
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                gl_u8_throttle = SPEED_ZERO;
+                xSemaphoreGive(semaphore_transmissionHandle);
+
 
                 break;
             }
