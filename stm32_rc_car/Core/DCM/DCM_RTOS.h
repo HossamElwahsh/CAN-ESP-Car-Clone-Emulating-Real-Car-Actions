@@ -58,6 +58,11 @@ extern SemaphoreHandle_t semaphore_transmissionHandle;
 extern SemaphoreHandle_t semaphore_steeringHandle;
 
 /* Exported functions ---------------------------------------------------------*/
+/**
+ * @brief  checks the gear, throttle and steering wheel positions and moves the motors accordingly.
+ * @param  pvParameters: value that is passed as the parameter to the created task.
+ * @retval None
+ */
 void Task_DCM(void *pvParameters);
 
 #endif /* DCM_DCM_RTOS_H_ */
