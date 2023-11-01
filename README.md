@@ -19,14 +19,15 @@
 | ECU | APP                                    | MC          | OS                      | Description                                                                                                                                                                                                                                  | Build File                                 |
 |-----|----------------------------------------|-------------|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
 | 1   | [HSPD CAN Processor](/stm32_real_car)  | STMF103C8T6 | FreeRTOS Kernel V10.0.1 | Handles monitoring, analyzing and processing of a real car high speed can bus messages, mapping and queueing certain actions to be sent over to ESP8266 using UART which will later send the queued actions via ESP-NOW to the RC Car System | [hex](dist/hspd_can_processor.hex)         |
-| 2   | Data Transfer                          | ESP8266     | -                       |                                                                                                                                                                                                                                              | [ino](dist/sender.ino)                     |
-| 3   | Data Transfer + Webserver              | ESP8266     | -                       |                                                                                                                                                                                                                                              | [ino](dist/rc_receiver_plus_webserver.ino) |
-| 4   | [RC Car Controller](/stm32_rc_car)     | STMF103C8T6 | FreeRTOS Kernel V10.0.1 |                                                                                                                                                                                                                                              | uploading                                  |
+| 2   | Data Transfer                          | ESP8266     | -                       | Transfers data from ECU (1) to ECU (3)                                                                                                                                                                                                       | [ino](dist/sender.ino)                     |
+| 3   | Data Transfer + Webserver              | ESP8266     | -                       | Transfers data received from ECU (2) to ECU (4) as well as handling a monitoring webserver GUI showing the current status of the RC Car                                                                                                      | [ino](dist/rc_receiver_plus_webserver.ino) |
+| 4   | [RC Car Controller](/stm32_rc_car)     | STMF103C8T6 | FreeRTOS Kernel V10.0.1 | Controls and handles RC Car based on the received action data from ECU (3) to replicate/clone the requests sent on the high speed can bus of the real Fiat Tipo ECU (1)                                                                      | uploading                                  |
 
 
 ---
 
 ### General Operational Notes
+- An additional safety feature has been added to prevent the car from hitting obstacles even if the throttle is pressed the RC car system will override the command and prevent further movement in that direction until the obstacle has been removed (this is handled both ways front and rear using ultrasonic sensors)
 
 ---
 
@@ -35,3 +36,6 @@
 ---
 
 ### Future Improvements
+- Engage brakes automatically if the car is drifting (on neutral) towards an obstacle.
+- Automatic corner lights with steering.
+- 
