@@ -643,7 +643,7 @@ void task_process_can_data(void * pvParameters)
 		xQueueReceive(canProcessQueue, &st_l_can_queue_item, portMAX_DELAY);
 
 		/* Map Data */
-		switch (RxHeader.StdId)
+		switch (st_l_can_queue_item.item_id)
 		{
 			case APP_CAN_ID_THROTTLE:
 			{
