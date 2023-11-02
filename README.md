@@ -41,11 +41,6 @@
 
 ---
 
-### General Issues [Resolved]
-
----
-
 ### Future Improvements
 - Engage brakes automatically if the car is drifting (on neutral) towards an obstacle.
 - Automatic corner lights with steering.
-- 
