@@ -1,3 +1,4 @@
+
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
@@ -349,8 +350,7 @@ void task_uart_processing(void * pvParameters)
             {
                 gl_lights_en = brake_lights_off;
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
-                gl_u8_throttle = SPEED_ZERO;
-                xSemaphoreGive(semaphore_transmissionHandle);
+
 
 
                 break;
@@ -359,6 +359,8 @@ void task_uart_processing(void * pvParameters)
             {
                 gl_lights_en = brake_lights_on;
                 xQueueSend(Lights_Queue, &gl_lights_en, portMAX_DELAY);
+                gl_u8_throttle = SPEED_ZERO;
+                xSemaphoreGive(semaphore_transmissionHandle);
 
                 break;
             }
