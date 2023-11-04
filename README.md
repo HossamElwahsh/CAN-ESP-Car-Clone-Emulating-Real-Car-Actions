@@ -28,7 +28,11 @@
 ## Documentation
 - Google Docs 👉 [GDocs](https://docs.google.com/document/d/1N5tMpMfzq1cyudIZ9OWSpMu_TuF-nQUE03dgVKXzXog/edit?usp=sharing)
 - PDF 👉 [V2V Communication - emulating real car actions.pdf](dist/V2V%20Communication%20-%20emulating%20real%20car%20actions.pdf)
+- Extra Info 👉 [Notion](https://cultured-chauffeur-242.notion.site/CAN-ESP-Car-Clone-Emulating-Real-Car-Actions-81b1da8b31a24f9394ab7fe4c9a54690)
 
+## Videos
+- Project Showcase 👉 [Youtube](https://youtu.be/MWUXd4jZsp0)
+ 
 ## System Layout
 ![system_layout](Assets/System_layout.jpg)
 
