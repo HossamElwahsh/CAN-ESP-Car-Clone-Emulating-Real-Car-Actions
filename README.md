@@ -25,6 +25,9 @@
 
 
 ---
+## Documentation
+- Google Docs 👉 [GDocs](https://docs.google.com/document/d/1N5tMpMfzq1cyudIZ9OWSpMu_TuF-nQUE03dgVKXzXog/edit?usp=sharing)
+- PDF 👉 [V2V Communication - emulating real car actions.pdf](dist/V2V%20Communication%20-%20emulating%20real%20car%20actions.pdf)
 
 ## System Layout
 ![system_layout](Assets/System_layout.jpg)
