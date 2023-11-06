@@ -150,8 +150,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_1
-#define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
+#define LED_BRAKES_Pin GPIO_PIN_14
+#define LED_BRAKES_GPIO_Port GPIOC
 #define MOTOR_IN_1_RIGHT_Pin GPIO_PIN_2
 #define MOTOR_IN_1_RIGHT_GPIO_Port GPIOA
 #define MOTOR_IN_2_RIGHT_Pin GPIO_PIN_3
@@ -160,30 +160,26 @@ void Error_Handler(void);
 #define MOTOR_IN_3_LEFT_GPIO_Port GPIOA
 #define MOTOR_IN_4_LEFT_Pin GPIO_PIN_5
 #define MOTOR_IN_4_LEFT_GPIO_Port GPIOA
-#define MOTOR_EN_B_LEFT_Pin GPIO_PIN_6
+#define MOTOR_EN_A_RIGHT_Pin GPIO_PIN_6
+#define MOTOR_EN_A_RIGHT_GPIO_Port GPIOA
+#define MOTOR_EN_B_LEFT_Pin GPIO_PIN_7
 #define MOTOR_EN_B_LEFT_GPIO_Port GPIOA
-#define LED_BRAKES_Pin GPIO_PIN_12
-#define LED_BRAKES_GPIO_Port GPIOB
+#define US_TRIGGER_1_DRIVE_Pin GPIO_PIN_0
+#define US_TRIGGER_1_DRIVE_GPIO_Port GPIOB
+#define US_TRIGGER_2_BACK_Pin GPIO_PIN_1
+#define US_TRIGGER_2_BACK_GPIO_Port GPIOB
 #define LED_REVERSE_Pin GPIO_PIN_13
 #define LED_REVERSE_GPIO_Port GPIOB
 #define LED_FRONT_Pin GPIO_PIN_14
 #define LED_FRONT_GPIO_Port GPIOB
 #define LED_RIGHT_Pin GPIO_PIN_15
 #define LED_RIGHT_GPIO_Port GPIOB
-#define LED_LEFT_Pin GPIO_PIN_8
-#define LED_LEFT_GPIO_Port GPIOA
-#define US_ECHO_Pin GPIO_PIN_9
-#define US_ECHO_GPIO_Port GPIOA
-#define US_TRIGGER_Pin GPIO_PIN_10
-#define US_TRIGGER_GPIO_Port GPIOA
-#define ESP_TX_Pin GPIO_PIN_6
-#define ESP_TX_GPIO_Port GPIOB
-#define ESP_RX_Pin GPIO_PIN_7
-#define ESP_RX_GPIO_Port GPIOB
-#define OLED_SCL_Pin GPIO_PIN_8
-#define OLED_SCL_GPIO_Port GPIOB
-#define OLED_SDA_Pin GPIO_PIN_9
-#define OLED_SDA_GPIO_Port GPIOB
+#define US_ECHO_1_DRIVE_Pin GPIO_PIN_8
+#define US_ECHO_1_DRIVE_GPIO_Port GPIOA
+#define US_ECHO_2_BACK_Pin GPIO_PIN_11
+#define US_ECHO_2_BACK_GPIO_Port GPIOA
+#define LED_LEFT_Pin GPIO_PIN_9
+#define LED_LEFT_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* NADA BEGIN */

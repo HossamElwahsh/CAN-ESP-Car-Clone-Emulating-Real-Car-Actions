@@ -97,16 +97,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
     /* Queue can data for processing */
     xQueueSendToBackFromISR(canProcessQueue, &st_can_queued_item, &xHigherPriorityTaskWoken);
 
-//	/* give transmit request semaphore */
-//	xSemaphoreGiveFromISR(uartTransmitRequestSemaphore, NULL);
-
 }
-
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-	volatile boolean sent = TRUE;
-}
-
 
 /* Inline helping function(s) */
 static inline uint8_t app_calc_throttle_power_percentage(uint16_t u16_a_throttle_reading)
@@ -612,7 +603,7 @@ void task_uart_tx_data(void * pvParameters)
         xQueueReceive(uartTransmitQueue, &app_uart_queue_item, portMAX_DELAY);
 
         /* transmit over uart */
-        uartTxStatus = HAL_UART_Transmit(&huart3, &app_uart_queue_item, 1, 500);
+        uartTxStatus = HAL_UART_Transmit(&huart3, &app_uart_queue_item, 1, APP_UART_TX_TIMEOUT_MS);
 
         if(HAL_OK == uartTxStatus)
         {
@@ -622,6 +613,8 @@ void task_uart_tx_data(void * pvParameters)
         else
         {
             /* Do Nothing */
+            /* Re-queue to front of queue */
+            xQueueSendToFront(uartTransmitQueue, &app_uart_queue_item, portMAX_DELAY);
         }
     }
 }
@@ -629,7 +622,7 @@ void task_uart_tx_data(void * pvParameters)
 void task_process_can_data(void * pvParameters)
 {
     /* Define queue item variable */
-    st_can_queued_item_t st_l_uart_queue_item;
+    st_can_queued_item_t st_l_can_queue_item;
 
     /*Define byte to be sent over UART */
     uint8_t u8_l_uart_tx_data = ZERO;
@@ -647,15 +640,15 @@ void task_process_can_data(void * pvParameters)
         u8_l_uart_tx_data = ZERO;
 
 		/* Dequeue / block until more data is available to dequeue */
-		xQueueReceive(canProcessQueue, &st_l_uart_queue_item, portMAX_DELAY);
+		xQueueReceive(canProcessQueue, &st_l_can_queue_item, portMAX_DELAY);
 
 		/* Map Data */
-		switch (RxHeader.StdId)
+		switch (st_l_can_queue_item.item_id)
 		{
 			case APP_CAN_ID_THROTTLE:
 			{
 				/* Map throttle values to 0 -> 100% */
-                u8_l_uart_tx_data = app_calc_throttle_power_percentage(st_l_uart_queue_item.un_data_converter.u16_rxNumber);
+                u8_l_uart_tx_data = app_calc_throttle_power_percentage(st_l_can_queue_item.un_data_converter.u16_rxNumber);
 
                 /* check not to send duplicated data */
                 if(u8_l_uart_tx_data != st_gs_last_data_state.u8_throttle_val)
@@ -674,7 +667,7 @@ void task_process_can_data(void * pvParameters)
 			case APP_CAN_ID_STEERING:
 			{
 				/* Map steering values */
-				u8_l_uart_tx_data = app_map_steering(st_l_uart_queue_item.un_data_converter.u8_rxNumber);
+				u8_l_uart_tx_data = app_map_steering(st_l_can_queue_item.un_data_converter.u8_rxNumber);
 
                 /* Check valid mapping */
                 if(APP_ESP_HEADER_STEERING == SHIFT_HIGH_NIBBLE_TO_LOW(u8_l_uart_tx_data))
@@ -693,42 +686,65 @@ void task_process_can_data(void * pvParameters)
 			case APP_CAN_ID_LIGHTS:
 			{
 				/* check if there's a change */
-				if(st_l_uart_queue_item.un_data_converter.u32_rxNumber != st_gs_last_data_state.u32_lighting_val)
+				if(st_l_can_queue_item.un_data_converter.u32_rxNumber != st_gs_last_data_state.u32_lighting_val)
 				{
 					/* changed - calculate changes */
 					un_l_lights_conv.u32_lights_val = GET_CHANGED_BITS(st_gs_last_data_state.u32_lighting_val,
-                                                                       st_l_uart_queue_item.un_data_converter.u32_rxNumber);
+                                                                       st_l_can_queue_item.un_data_converter.u32_rxNumber);
 
 					/* update last state global variable */
-					st_gs_last_data_state.u32_lighting_val = st_l_uart_queue_item.un_data_converter.u32_rxNumber;
+					st_gs_last_data_state.u32_lighting_val = st_l_can_queue_item.un_data_converter.u32_rxNumber;
 
 					/* check changed lights */
+
+                    /* Brakes light */
 					if(un_l_lights_conv.st_lights_bits.u32_brake_lights_bit)
 					{
 						/* brake lights state changed - toggle last state */
-						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_break_lights);
+                        st_gs_last_data_state.st_lighting_state.bool_brake_lights = st_l_can_queue_item.un_data_converter.u8_lighting_bits.u32_brake_lights_bit;
+
+                        if(TRUE == st_gs_last_data_state.st_lighting_state.bool_brake_lights)
+                        {
+                            st_gs_last_data_state.u8_throttle_val = GENERATE_ESP_FRAME(APP_ESP_HEADER_THROTTLE, APP_ESP_DATA_THROTTLE_STOP_MAP_VAL);
+                        }
+                        else
+                        {
+                            /* Keep last throttle value in memory */
+                        }
 
 						/* queue to ESP */
-						u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_break_lights);
+						u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_BRAKES, st_gs_last_data_state.st_lighting_state.bool_brake_lights);
 
                         xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
 					}
+                    /* Left Indicator */
 					if(un_l_lights_conv.st_lights_bits.u32_left_indicator_bit)
 					{
 						/* left indicator lights state changed - toggle last state */
-						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_left_indicator);
+                        st_gs_last_data_state.st_lighting_state.bool_left_indicator = st_l_can_queue_item.un_data_converter.u8_lighting_bits.u32_left_indicator_bit;
 
                         /* queue to ESP */
                         u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_L_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_left_indicator);
                         xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
 					}
+                    /* Right Indicator */
 					if(un_l_lights_conv.st_lights_bits.u32_right_indicator_bit)
 					{
-						/* brake lights state changed - toggle last state */
-						TOGGLE(st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+						/* right indicator lights state changed - update last state */
+                        st_gs_last_data_state.st_lighting_state.bool_right_indicator = st_l_can_queue_item.un_data_converter.u8_lighting_bits.u32_right_indicator_bit;
 
                         /* queue to ESP */
                         u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_R_INDICATORS, st_gs_last_data_state.st_lighting_state.bool_right_indicator);
+                        xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
+                    }
+                    /* Front Lights */
+					if(un_l_lights_conv.st_lights_bits.u32_front_light_bit)
+					{
+						/* front lights state changed - update last state */
+						st_gs_last_data_state.st_lighting_state.bool_front_lights = st_l_can_queue_item.un_data_converter.u8_lighting_bits.u32_front_light_bit;
+
+                        /* queue to ESP */
+                        u8_l_uart_tx_data = GENERATE_ESP_FRAME(APP_ESP_HEADER_LIGHT_FRONT, st_gs_last_data_state.st_lighting_state.bool_front_lights);
                         xQueueSendToBack(uartTransmitQueue, &u8_l_uart_tx_data, portMAX_DELAY);
                     }
 
@@ -745,7 +761,7 @@ void task_process_can_data(void * pvParameters)
 			case APP_CAN_ID_TRANSMISSION:
 			{
 				/* check transmission state */
-				u8_l_uart_tx_data = app_map_transmission(st_l_uart_queue_item.un_data_converter.u8_rxNumber);
+				u8_l_uart_tx_data = app_map_transmission(st_l_can_queue_item.un_data_converter.u8_rxNumber);
 
                 /* check valid mapping */
                 if(SHIFT_HIGH_NIBBLE_TO_LOW(u8_l_uart_tx_data) == APP_ESP_HEADER_TRANSMISSION)

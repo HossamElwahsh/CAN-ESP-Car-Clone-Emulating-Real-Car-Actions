@@ -21,3 +21,7 @@ stm32_rc_car/.settings/language.settings.xml
 stm32_real_car/.settings/language.settings.xml
 
 stm32_real_car/.cproject
+
+*.bkp
+
+*.dtmp
