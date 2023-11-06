@@ -30,25 +30,39 @@
 /* HOSSAM END */
 
 /* NADA BEGIN */
-#include "Ultrasonic_Task.h"
+#include "../APP/Ultrasonic_Task.h"
 /* NADA END */
 
 /* SAKR BEGIN */
+<<<<<<< Updated upstream
+=======
+#include "../APP/app_interface.h"
+#include "../APP/app_config.h"
+>>>>>>> Stashed changes
 /* SAKR END */
 
 /* NORHAN BEGIN */
 /* NORHAN END */
 
 /* AHMED BEGIN */
+<<<<<<< Updated upstream
 #include "fonts.h"
 #include "ssd1306.h"
 #include "test.h"
 #include "bitmap.h"
 #include "horse_anim.h"
+=======
+#include "../HAL/OLED/fonts.h"
+#include "../HAL/OLED/ssd1306.h"
+>>>>>>> Stashed changes
 /* AHMED END */
 
 
 /* SALMA BEGIN */
+<<<<<<< Updated upstream
+=======
+#include "../APP/DCM_RTOS.h"
+>>>>>>> Stashed changes
 /* SALMA END */
 
 /* USER CODE END Includes */
